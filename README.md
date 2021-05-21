@@ -163,12 +163,12 @@ Lastly, the `GameState` contains a:
 * A current step which is a `GameStep` representing the current step the player is on in their turn.
 * Finally, it contains a turn number representing the number of turns which have passed since the beginging of the game.
 
-The GameStep is just an enum represented by `NotCurrentlyPlaying | Draw | Play | Attack | Reconile`
+The GameStep is just an enum represented by `NotCurrentlyPlaying | Draw | Play | Attack | Reconcile`
 
 ```
 
 type GameStep =
-    NotCurrentlyPlaying | Draw | Play | Attack | Reconile
+    NotCurrentlyPlaying | Draw | Play | Attack | Reconcile
 
 type GameState =
     {
@@ -214,5 +214,12 @@ and ResourceCard
 
 ```
 
-
 Now running `dotnet fake build --target run` builds.
+
+### Drawing the general gameboard.
+---
+
+My idea for the next step is to layout the general game board.
+
+I used shuffle.dev to scaffold a basic ui using Bulma ([editor avail here](https://shuffle.dev/editor?project=10d217c2a045a04ac447cd87a95c49662d831217)). Fulma, a F# strongly typed wrapper for Bulma is baked into the Safe Stack.
+
