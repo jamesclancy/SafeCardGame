@@ -6,7 +6,7 @@ type Todo =
     { Id : Guid
       Description : string }
 
-(*
+
 type PlayerId = string
 
 type Player =
@@ -92,7 +92,6 @@ and GameState =
         CurrentStep:GameStep
         TurnNumber: int
     }
-*)
 
 module Todo =
     let isValid (description: string) =
