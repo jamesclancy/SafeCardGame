@@ -29,7 +29,7 @@ This shoud scaffold a basic todo app. Progress to here is located in the the bra
 
 My idea would be that scoping out the rules for the game might be the best first step.
 
-### Defining the Domain
+### Defining the basic Domain Model and Terms
 ---
 
 I think definieing the domain models might be the best way to start documenting the rules.  The domain model should correlate to object defined in the shared path of the project (i.e. src/shared). For now I am just defining the types in the existing `Shared` module found in the Shared.fs.
@@ -216,10 +216,18 @@ and ResourceCard
 
 Now running `dotnet fake build --target run` builds.
 
-### Drawing the general gameboard.
+### Defining and Drawing the Gameboard
 ---
 
 My idea for the next step is to layout the general game board.
+This serves a great base to force me to actually think out the domain, show visisble progess and have a base to actaully plug future developments into and visualize.
+
+I first made a sketch of what I was thinking about for the board.
+
+![Basic Sketch](documentation/img/InitialSketchOfBoard.png)
 
 I used shuffle.dev to scaffold a basic ui using Bulma ([editor avail here](https://shuffle.dev/editor?project=10d217c2a045a04ac447cd87a95c49662d831217)). Fulma, a F# strongly typed wrapper for Bulma is baked into the Safe Stack.
 
+From my initial sketch I scaffolded out some stuff using shuffle, downloaded the html and modified the html to create a basic template based on my sketch.
+
+([Bulma template for the board](documentation/html/InitialSketchOfBoard.html))
