@@ -84,7 +84,8 @@ let containerBox (model : Model) (dispatch : Msg -> unit) =
     ]
 
 let view (model : Model) (dispatch : Msg -> unit) =
-    Hero.hero [
+    PageLayoutParts.mainLayout
+    (*Hero.hero [
         Hero.Color IsPrimary
         Hero.IsFullHeight
         Hero.Props [
@@ -111,4 +112,4 @@ let view (model : Model) (dispatch : Msg -> unit) =
                 ]
             ]
         ]
-    ]
+    ] *)
