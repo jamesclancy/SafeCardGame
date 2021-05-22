@@ -226,8 +226,20 @@ I first made a sketch of what I was thinking about for the board.
 
 ![Basic Sketch](documentation/img/InitialSketchOfBoard.png)
 
-I used shuffle.dev to scaffold a basic ui using Bulma ([editor avail here](https://shuffle.dev/editor?project=10d217c2a045a04ac447cd87a95c49662d831217)). Fulma, a F# strongly typed wrapper for Bulma is baked into the Safe Stack.
+I used shuffle.dev to scaffold a basic ui using Bulma ([editor avail here](https://shuffle.dev/editor?project=10d217c2a045a04ac447cd87a95c49662d831217)). Fulma, a F# strongly typed wrapper for Bulma is baked into the Safe Stack which will be utilized later on.
 
 From my initial sketch I scaffolded out some stuff using shuffle, downloaded the html and modified the html to create a basic template based on my sketch.
 
 ([Bulma template for the board](documentation/html/InitialSketchOfBoard.html))
+
+I moved things around a number of times, I was unable to make it all fit on one page (the goal) but I think I was able to improve it somewhat.
+
+([Bulma template for the board v2](documentation/html/InitialSketchOfBoardv2.html))
+
+I am going to move forward with this layout. In teh future I am thinking the user could toggle something to transform the cards into tables or something along those lines.
+
+This is the final commit in the ` step-3-build-the-game-board-basic-layout` branch.
+
+
+
+
