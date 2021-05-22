@@ -83,7 +83,7 @@ and InPlayCreature =
         SpentEnergy: ResourcePool
     }
 and GameStep =
-    NotCurrentlyPlaying | Draw | Play | Attack | Reconile
+    NotCurrentlyPlaying | Draw | Play | Attack | Reconcile
 and GameState =
     {
         Players: Map<PlayerId, Player>
