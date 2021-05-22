@@ -218,7 +218,7 @@ Now running `dotnet fake build --target run` builds.
 
 ### Defining and Drawing the Gameboard
 ---
-S
+
 My idea for the next step is to lay out the general game board.
 This serves a great base to force me to actually think out the domain, show visible progress and have a base to actually plug future developments into and visualize.
 
@@ -240,3 +240,11 @@ I am going to move forward with this layout. In the future, I am thinking the us
 
 This is the final commit in the `step-3-build-the-game-board-basic-layout` branch.
 
+### Bringing the board layout into the client
+---
+
+I feel like the next logical step is to bring the layout I just developed into the client.
+
+
+
+This is the final commit in the `step-4-implement-layout-in-client` branch.
