@@ -243,7 +243,7 @@ This is the final commit in the `step-3-build-the-game-board-basic-layout` branc
 ### Bringing the board layout into the client
 ---
 
-I feel like the next logical step is to bring the layout I just developed into the client.
+I feel like the next logical step is to bring the layout I just developed to the client.
 
 First I updated the index.html file in the src/client to reference the bulmaswatch layout "darkly" like the template.
 
@@ -253,9 +253,9 @@ Whatever we convert is going to be plugged into the <div id="elmish-app"></div> 
 
 This failed with no error message on the site so I am assuming it doesn't like the html somewhere.
 
-In order to move forward I began breaking down the html page into pieces and converting the page part by part (which is something which would eventually have to be done anyways).
+In order to move forward, I began breaking down the html page into pieces and converting the page part by part (which is something that would eventually have to be done anyway).
 
-This will require furture refinement but I intitially broke out the page into parts for the
+This will require future refinement but I initially broke out the page into parts for the
 
 ```
     topNavigation
@@ -285,7 +285,7 @@ With a general arangement of
 
 ```
 
-Going in order I dropped each of these parts into the converter. When I reached `playerControlCenter` the converter stopped working. After playing around with teh html for a while (no error message was returned) I was able to discover that the converter did not like the `disabled` on the buttons.
+Going in order I dropped each of these parts into the converter. When I reached `playerControlCenter` the converter stopped working. After playing around with the html for a while (no error message was returned) I was able to discover that the converter did not like the `disabled` on the buttons.
 
 i.e. the blocks like:
 ```
@@ -315,7 +315,7 @@ let footerBand =
         ...
 ```
 
-I then manually created a main layout as
+I then manually created the mainLayout as
 
 ```
 let mainLayout =
@@ -339,7 +339,7 @@ I then added a `PageLayoutElements.fs` to the src/client and added the file into
 
 I copied and pasted the contents from the ElmishElements into this file.
 
-This broke the builda as the file needed a module to be defined and the references imported so I added
+This broke the build as the file needed a module to be defined and the references imported so I added
 
 ```
 module PageLayoutParts
@@ -406,9 +406,8 @@ let view (model : Model) (dispatch : Msg -> unit) =
     PageLayoutParts.mainLayout
 ```
 
-After viewing the page a few elements had to be rearranged and some changes had to be made. For example changing the the html unicode codes to just the unicode characters.
+After viewing the page a few elements had to be rearranged and some changes had to be made. For example, changing the html unicode codes to just the unicode characters.
 
-For the next step we will try to make the output actaully pull information from the GameState model and break down these general page parts into smaller and more usable parts.
-
+For the next step, we will try to make the output actually pull information from the GameState model and break down these general page parts into smaller and more usable parts.
 
 This is the final commit in the `step-4-implement-layout-in-client` branch.
