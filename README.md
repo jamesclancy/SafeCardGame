@@ -397,4 +397,18 @@ let mainLayout =
     ]
 ```
 
+It compiled and I was then able to upload the view function in Index.fs to reference the mainLayout function.
+
+i.e.
+
+```
+let view (model : Model) (dispatch : Msg -> unit) =
+    PageLayoutParts.mainLayout
+```
+
+After viewing the page a few elements had to be rearranged and some changes had to be made. For example changing the the html unicode codes to just the unicode characters.
+
+For the next step we will try to make the output actaully pull information from the GameState model and break down these general page parts into smaller and more usable parts.
+
+
 This is the final commit in the `step-4-implement-layout-in-client` branch.
