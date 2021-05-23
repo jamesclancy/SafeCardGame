@@ -4,6 +4,7 @@ open Elmish
 open Fable.React
 open Fable.React.Props
 open Fulma
+open Shared.Domain
 
 let topNavigation =
   nav [ Class "navbar is-dark" ]
@@ -56,33 +57,38 @@ let topNavigation =
                               Href "https://github.com/jamesclancy/SafeCardGame" ]
                             [ str "Source" ] ] ] ] ] ] ]
 
-let enemyStats =
+
+let playerStats  (player: Player) (playerBoard: PlayerBoard) =
+    [             div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "💓 %i/10" player.RemainingLifePoints) ] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "🤚 %i" playerBoard.Hand.Cards.Length) ] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "🂠 %i" playerBoard.Deck.Cards.Length) ] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "🗑️ %i" playerBoard.DiscardPile.Cards.Length)] ] ]
+
+
+let enemyStats (player: Player) (playerBoard: PlayerBoard) =
   nav [ Class "navbar is-fullwidth is-danger" ]
     [ div [ Class "container" ]
         [ div [ Class "navbar-brand" ]
             [ p [ Class "navbar-item title is-5"
                   Href "#" ]
-                [ str "Opponent Name" ] ]
+                [ str player.Name ] ]
           div [ Class "navbar-menu" ]
             [ div [ Class "navbar-start" ]
-                [ div [ Class "navbar-item" ]
-                    [ a [ Class "button is-primary"
-                          Href "#" ]
-                        [ str "💓 5/10" ] ]
-                  div [ Class "navbar-item" ]
-                    [ a [ Class "button is-primary"
-                          Href "#" ]
-                        [ str "🤚 3" ] ]
-                  div [ Class "navbar-item" ]
-                    [ a [ Class "button is-primary"
-                          Href "#" ]
-                        [ str "🂠 34" ] ]
-                  div [ Class "navbar-item" ]
-                    [ a [ Class "button is-primary"
-                          Href "#" ]
-                        [ str "🗑️ 10" ] ] ] ] ] ]
+                [ yield! playerStats player playerBoard ] ] ] ]
 
-let enemyCreatures =
+let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
   section [
           Class "section"
           Style [ Background "url('https://picsum.photos/id/10/2500/1667?blur=5')"
@@ -129,7 +135,7 @@ let enemyCreatures =
                                             [ str "Vine Whip" ]
                                           td [ ]
                                             [ str "30" ] ] ] ] ] ] ] ]
-              div [ Class "column is-9" ]
+              div [ Class "column is-7" ]
                 [ div [ Class "columns is-mobile is-multiline" ]
                     [ h2 [ Class "title is-4" ]
                         [ str "Bench" ]
@@ -164,53 +170,47 @@ let enemyCreatures =
                                 [ str "90/100" ] ] ] ] ] ] ] ]
 
 
-let playerControlCenter =
+let yourCurrentStepClasses (player: Player) (gameState : GameState) (gamesStep: GameStep) =
+    if not (player.PlayerId = gameState.CurrentPlayer) then "button is-primary"
+    else
+        if gameState.CurrentStep = gamesStep then "button is-danger"
+        else "button is-primary"
+
+let currentStepInformation (player: Player) (playerBoard: PlayerBoard) (gameState : GameState) =
+    div [ Class "navbar-item" ]
+                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
+                        [ p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Draw)
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Draw" ] ] ]
+                          p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Play)
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Play" ] ] ]
+                          p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Attack)
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Attack" ] ] ]
+                          p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Reconcile)
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Reconcile" ] ] ] ] ]
+
+let playerControlCenter  (player: Player) (playerBoard: PlayerBoard) (gameState : GameState) =
   nav [ Class "navbar is-fullwidth is-primary" ]
     [ div [ Class "container" ]
         [ div [ Class "navbar-brand" ]
             [ p [ Class "navbar-item title is-5"
                   Href "#" ]
-                [ str "Player Name" ] ]
+                [ str player.Name ] ]
           div [ Class "navbar-menu" ]
             [ div [ Class "navbar-start" ]
-                [ div [ Class "navbar-item" ]
-                    [ a [ Class "button is-primary"
-                          Href "#" ]
-                        [ str "💓 5/10" ] ]
-                  div [ Class "navbar-item" ]
-                    [ a [ Class "button is-primary"
-                          Href "#" ]
-                        [ str "🤚 3" ] ]
-                  div [ Class "navbar-item" ]
-                    [ a [ Class "button is-primary"
-                          Href "#" ]
-                        [ str "🂠 34" ] ]
-                  div [ Class "navbar-item" ]
-                    [ a [ Class "button is-primary"
-                          Href "#" ]
-                        [ str "🗑️ 10" ] ]
-                  div [ Class "navbar-item" ]
-                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
-                        [ p [ Class "control" ]
-                            [ button [ Class "button is-primary"
-                                       Disabled true ]
-                                [ span [ ]
-                                    [ str "Draw" ] ] ]
-                          p [ Class "control" ]
-                            [ button [ Class "button is-primary"
-                                       Disabled true ]
-                                [ span [ ]
-                                    [ str "Play" ] ] ]
-                          p [ Class "control" ]
-                            [ button [ Class "button is-danger"
-                                       Disabled true ]
-                                [ span [ ]
-                                    [ str "Attack" ] ] ]
-                          p [ Class "control" ]
-                            [ button [ Class "button is-primary"
-                                       Disabled true ]
-                                [ span [ ]
-                                    [ str "Reconcile" ] ] ] ] ] ]
+                [ yield! playerStats player playerBoard
+                  currentStepInformation player playerBoard gameState ]
               div [ Class "navbar-end" ]
                 [ div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
@@ -223,7 +223,7 @@ let playerControlCenter =
                                 [ span [ ]
                                     [ str "Skip Step" ] ] ] ] ] ] ] ] ]
 
-let playerCreatures =
+let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
   section [
           Class "section"
           Style [ Background "url('https://picsum.photos/id/1000/2500/1667?blur=5')"
@@ -494,156 +494,77 @@ let playerCreatures =
                                               td [ ]
                                                 [ str "30" ] ] ] ] ] ] ] ] ] ] ] ]
 
-let playerHand =
+
+let displayCardSpecialEffectDetailIfPresent title (value : Option<GameStateSpecialEffect>)=
+    match value with
+    | Some s ->
+                p [ Class "is-italic" ]
+                        [ strong [ ]
+                             [ str title ]
+                          str s.Description ]
+    | None -> span [] []
+
+let renderCharacterCard (card: CharacterCard) =
+      div [ Class "column is-4" ]
+                [ div [ Class "card" ]
+                    [ header [ Class "card-header" ]
+                        [ p [ Class "card-header-title" ]
+                            [ str card.Name ]
+                          p [ Class "card-header-icon" ]
+                            [ str "🍂 x4" ] ]
+                      div [ Class "card-image" ]
+                        [ figure [ Class "image is-4by3" ]
+                            [ img [ Src (card.ImageUrl.ToString())
+                                    Alt "Placeholder image"
+                                    Class "is-fullwidth" ] ] ]
+                      div [ Class "card-content" ]
+                        [ div [ Class "content" ]
+                            [ p [ Class "is-italic" ]
+                                [ str card.Description ]
+                              displayCardSpecialEffectDetailIfPresent "On Enter Playing Field" card.EnterSpecialEffects
+                              displayCardSpecialEffectDetailIfPresent "On Exit Playing Field" card.ExitSpecialEffects
+                              h5 [ Class "IsTitle is5" ]
+                                [ str "Attacks" ]
+                              table [ ]
+                                [ tr [ ]
+                                    [ td [ ]
+                                        [ str "🍂 x1" ]
+                                      td [ ]
+                                        [ str "Leaf Cut" ]
+                                      td [ ]
+                                        [ str "10" ] ]
+                                  tr [ ]
+                                    [ td [ ]
+                                        [ str "🍂 x2" ]
+                                      td [ ]
+                                        [ str "Vine Whip" ]
+                                      td [ ]
+                                        [ str "30" ] ] ] ] ]
+                      footer [ Class "card-footer" ]
+                        [ a [ Href "#"
+                              Class "card-footer-item" ]
+                            [ str "Play" ]
+                          a [ Href "#"
+                              Class "card-footer-item" ]
+                            [ str "Discard" ] ] ] ]
+
+let renderCardForHand (card: Card) =
+    match card with
+    | CharacterCard c -> renderCharacterCard c
+    | _ ->
+        strong [] [ str "IDK" ]
+
+
+let renderCardInstanceForHand (card: CardInstance) =
+    renderCardForHand card.Card
+
+let playerHand (hand : Hand) =
   section [ Class "section" ]
     [ div [ Class "container py-4" ]
         [ h3 [ Class "title is-spaced is-4" ]
             [ str "Hand" ]
           div [ Class "columns is-mobile mb-5" ]
-            [ div [ Class "column is-4" ]
-                [ div [ Class "card" ]
-                    [ header [ Class "card-header" ]
-                        [ p [ Class "card-header-title" ]
-                            [ str "Card Name" ]
-                          p [ Class "card-header-icon" ]
-                            [ str "🍂 x4" ] ]
-                      div [ Class "card-image" ]
-                        [ figure [ Class "image is-4by3" ]
-                            [ img [ Src "https://picsum.photos/320/200?1"
-                                    Alt "Placeholder image"
-                                    Class "is-fullwidth" ] ] ]
-                      div [ Class "card-content" ]
-                        [ div [ Class "content" ]
-                            [ p [ Class "is-italic" ]
-                                [ str "This is a sweet description." ]
-                              p [ Class "is-italic" ]
-                                [ strong [ ]
-                                    [ str "On Enter Playing Field" ]
-                                  str ": Effect description." ]
-                              p [ Class "is-italic" ]
-                                [ strong [ ]
-                                    [ str "On Exit Playing Field" ]
-                                  str ": Effect description." ]
-                              h5 [ Class "IsTitle is5" ]
-                                [ str "Attacks" ]
-                              table [ ]
-                                [ tr [ ]
-                                    [ td [ ]
-                                        [ str "🍂 x1" ]
-                                      td [ ]
-                                        [ str "Leaf Cut" ]
-                                      td [ ]
-                                        [ str "10" ] ]
-                                  tr [ ]
-                                    [ td [ ]
-                                        [ str "🍂 x2" ]
-                                      td [ ]
-                                        [ str "Vine Whip" ]
-                                      td [ ]
-                                        [ str "30" ] ] ] ] ]
-                      footer [ Class "card-footer" ]
-                        [ a [ Href "#"
-                              Class "card-footer-item" ]
-                            [ str "Play" ]
-                          a [ Href "#"
-                              Class "card-footer-item" ]
-                            [ str "Discard" ] ] ] ]
-              div [ Class "column is-4" ]
-                [ div [ Class "card" ]
-                    [ header [ Class "card-header" ]
-                        [ p [ Class "card-header-title" ]
-                            [ str "Card Name" ]
-                          p [ Class "card-header-icon" ]
-                            [ str "🍂 x4" ] ]
-                      div [ Class "card-image" ]
-                        [ figure [ Class "image is-4by3" ]
-                            [ img [ Src "https://picsum.photos/320/200?2"
-                                    Alt "Placeholder image"
-                                    Class "is-fullwidth" ] ] ]
-                      div [ Class "card-content" ]
-                        [ div [ Class "content" ]
-                            [ p [ Class "is-italic" ]
-                                [ str "This is a sweet description." ]
-                              p [ Class "is-italic" ]
-                                [ strong [ ]
-                                    [ str "On Enter Playing Field" ]
-                                  str ": Effect description." ]
-                              p [ Class "is-italic" ]
-                                [ strong [ ]
-                                    [ str "On Exit Playing Field" ]
-                                  str ": Effect description." ]
-                              h5 [ Class "IsTitle is5" ]
-                                [ str "Attacks" ]
-                              table [ ]
-                                [ tr [ ]
-                                    [ td [ ]
-                                        [ str "🍂 x1" ]
-                                      td [ ]
-                                        [ str "Leaf Cut" ]
-                                      td [ ]
-                                        [ str "10" ] ]
-                                  tr [ ]
-                                    [ td [ ]
-                                        [ str "🍂 x2" ]
-                                      td [ ]
-                                        [ str "Vine Whip" ]
-                                      td [ ]
-                                        [ str "30" ] ] ] ] ]
-                      footer [ Class "card-footer" ]
-                        [ a [ Href "#"
-                              Class "card-footer-item" ]
-                            [ str "Play" ]
-                          a [ Href "#"
-                              Class "card-footer-item" ]
-                            [ str "Discard" ] ] ] ]
-              div [ Class "column is-4" ]
-                [ div [ Class "card" ]
-                    [ header [ Class "card-header" ]
-                        [ p [ Class "card-header-title" ]
-                            [ str "Card Name" ]
-                          p [ Class "card-header-icon" ]
-                            [ str "🍂 x4" ] ]
-                      div [ Class "card-image" ]
-                        [ figure [ Class "image is-4by3" ]
-                            [ img [ Src "https://picsum.photos/320/200"
-                                    Alt "Placeholder image"
-                                    Class "is-fullwidth" ] ] ]
-                      div [ Class "card-content" ]
-                        [ div [ Class "content" ]
-                            [ p [ Class "is-italic" ]
-                                [ str "This is a sweet description." ]
-                              p [ Class "is-italic" ]
-                                [ strong [ ]
-                                    [ str "On Enter Playing Field" ]
-                                  str ": Effect description." ]
-                              p [ Class "is-italic" ]
-                                [ strong [ ]
-                                    [ str "On Exit Playing Field" ]
-                                  str ": Effect description." ]
-                              h5 [ Class "IsTitle is5" ]
-                                [ str "Attacks" ]
-                              table [ ]
-                                [ tr [ ]
-                                    [ td [ ]
-                                        [ str "🍂 x1" ]
-                                      td [ ]
-                                        [ str "Leaf Cut" ]
-                                      td [ ]
-                                        [ str "10" ] ]
-                                  tr [ ]
-                                    [ td [ ]
-                                        [ str "🍂 x2" ]
-                                      td [ ]
-                                        [ str "Vine Whip" ]
-                                      td [ ]
-                                        [ str "30" ] ] ] ] ]
-                      footer [ Class "card-footer" ]
-                        [ a [ Href "#"
-                              Class "card-footer-item" ]
-                            [ str "Play" ]
-                          a [ Href "#"
-                              Class "card-footer-item" ]
-                            [ str "Discard" ] ] ] ] ] ] ]
+            [ yield! Seq.map renderCardInstanceForHand hand.Cards ] ] ]
 
 let footerBand =
   footer [ Class "footer" ]
@@ -684,15 +605,44 @@ let footerBand =
                 [ p [ Class "subtitle is-6" ]
                     [ str "© ??" ] ] ] ] ]
 
-let mainLayout =
-  div [ Class "container is-fluid" ]
-    [ topNavigation
-      br [ ]
-      br [ ]
-      enemyStats
-      enemyCreatures
-      playerControlCenter
-      playerCreatures
-      playerHand
-      footerBand
-    ]
+let opponentPlayer (model : GameState) =
+    match model.Players.TryGetValue model.OpponentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate oppponent in player list" |> Error
+
+
+let opponentPlayerBoard (model : GameState) =
+    match model.Boards.TryGetValue model.OpponentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate oppponent in board list" |> Error
+
+let currentPlayer (model : GameState) =
+    match model.Players.TryGetValue model.CurrentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate current player in player list" |> Error
+
+
+let currentPlayerBoard (model : GameState) =
+    match model.Boards.TryGetValue model.CurrentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate current player in board list" |> Error
+
+let extractNeededModelsFromState (model: GameState) =
+    opponentPlayer model, opponentPlayerBoard model, currentPlayer model, currentPlayerBoard model
+
+
+let mainLayout  model dispatch =
+  match extractNeededModelsFromState model with
+  | Ok op, Ok opb, Ok cp, Ok cpb ->
+      div [ Class "container is-fluid" ]
+        [ topNavigation
+          br [ ]
+          br [ ]
+          enemyStats op opb
+          enemyCreatures op opb
+          playerControlCenter cp cpb model
+          playerCreatures cp cpb
+          playerHand cpb.Hand
+          footerBand
+        ]
+  | _ -> strong [] [ str "Error in GameState encountered." ]
