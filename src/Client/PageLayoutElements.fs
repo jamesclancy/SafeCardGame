@@ -495,31 +495,34 @@ let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
                                                 [ str "30" ] ] ] ] ] ] ] ] ] ] ] ]
 
 
-let renderCardForHand (card: Card) =
-  div [ Class "column is-4" ]
+let displayCardSpecialEffectDetailIfPresent title (value : Option<GameStateSpecialEffect>)=
+    match value with
+    | Some s ->
+                p [ Class "is-italic" ]
+                        [ strong [ ]
+                             [ str title ]
+                          str s.Description ]
+    | None -> span [] []
+
+let renderCharacterCard (card: CharacterCard) =
+      div [ Class "column is-4" ]
                 [ div [ Class "card" ]
                     [ header [ Class "card-header" ]
                         [ p [ Class "card-header-title" ]
-                            [ str "Card Name" ]
+                            [ str card.Name ]
                           p [ Class "card-header-icon" ]
                             [ str "🍂 x4" ] ]
                       div [ Class "card-image" ]
                         [ figure [ Class "image is-4by3" ]
-                            [ img [ Src "https://picsum.photos/320/200?1"
+                            [ img [ Src (card.ImageUrl.ToString())
                                     Alt "Placeholder image"
                                     Class "is-fullwidth" ] ] ]
                       div [ Class "card-content" ]
                         [ div [ Class "content" ]
                             [ p [ Class "is-italic" ]
-                                [ str "This is a sweet description." ]
-                              p [ Class "is-italic" ]
-                                [ strong [ ]
-                                    [ str "On Enter Playing Field" ]
-                                  str ": Effect description." ]
-                              p [ Class "is-italic" ]
-                                [ strong [ ]
-                                    [ str "On Exit Playing Field" ]
-                                  str ": Effect description." ]
+                                [ str card.Description ]
+                              displayCardSpecialEffectDetailIfPresent "On Enter Playing Field" card.EnterSpecialEffects
+                              displayCardSpecialEffectDetailIfPresent "On Exit Playing Field" card.ExitSpecialEffects
                               h5 [ Class "IsTitle is5" ]
                                 [ str "Attacks" ]
                               table [ ]
@@ -544,6 +547,13 @@ let renderCardForHand (card: Card) =
                           a [ Href "#"
                               Class "card-footer-item" ]
                             [ str "Discard" ] ] ] ]
+
+let renderCardForHand (card: Card) =
+    match card with
+    | CharacterCard c -> renderCharacterCard c
+    | _ ->
+        strong [] [ str "IDK" ]
+
 
 let renderCardInstanceForHand (card: CardInstance) =
     renderCardForHand card.Card

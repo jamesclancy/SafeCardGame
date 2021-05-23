@@ -55,6 +55,7 @@ let testCardGenerator cardInstanceIdStr cardIdStr cardImageUrlStr =
                 PrimaryResource = Resource.Grass
                 Creature = creature
                 ImageUrl = imgUrl
+                Description = "A rare creature with stange and powers."
             }
         Ok  {
                 CardIntanceId  =  id

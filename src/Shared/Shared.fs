@@ -9,6 +9,7 @@ type Todo =
 
 
 type NonEmptyString = private NonEmptyString of string
+    with override this.ToString() = match this with NonEmptyString s -> s
 module NonEmptyString =
     let build str =
         if String.IsNullOrWhiteSpace str then "Value cannot be empty" |> Error
@@ -16,15 +17,17 @@ module NonEmptyString =
 
 
 type UrlString = private UrlString of NonEmptyString
+    with override this.ToString() = match this with UrlString s -> s.ToString()
 module UrlString =
     let build str =
         if String.IsNullOrWhiteSpace str then "Value must be a url." |> Error
-
         //if Uri.IsWellFormedUriString(str, UriKind.RelativeOrAbsolute) then "Value must be a url." |> Error
         else str |> NonEmptyString.build |> Result.map UrlString
 
 
 type ImageUrlString = private ImageUrlString of UrlString
+    with override this.ToString() = match this with ImageUrlString s -> s.ToString()
+
 module ImageUrlString =
 
     let isUrlImage (str : string) =
@@ -94,6 +97,7 @@ module Domain =
     and CharacterCard
         = { CardId: CardId;
             Name: string;
+            Description: string;
             Creature: Creature;
             ImageUrl: ImageUrlString;
             ResourceCost: ResourcePool;
@@ -105,6 +109,7 @@ module Domain =
         = {
             CardId: CardId;
             Name: string;
+            Description: string;
             ResourceCost: ResourcePool;
             ImageUrl: ImageUrlString;
             PrimaryResource: Resource;
@@ -115,6 +120,7 @@ module Domain =
         = {
             CardId: CardId;
             Name: string;
+            Description: string;
             ResourceCost: ResourcePool;
             ImageUrl: ImageUrlString;
             PrimaryResource: Resource;
@@ -123,7 +129,11 @@ module Domain =
             ResourceAvailableOnFirstTurn: bool;
             ResourcesAdded: ResourcePool
         }
-    and GameStateSpecialEffect = delegate of GameState -> GameState
+    and GameStateSpecialEffect =
+        {
+            Function: Func<GameState, GameState>
+            Description: string
+        }
     and Creature =
         {
             Health: int

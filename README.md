@@ -953,3 +953,27 @@ let playerBoard (player : Player) =
 I feel like there has to be a much better way to deal with these Result types but I am goign to keep driving on and revisit later.
 
 In building out this generator I realized I needed to add an image url for the cards so I added an `ImageUrl` to the types of type `ImageUrlString` and added this to the builder.
+
+Now I need to update the `renderCardForHand`. First I switch the card type and push the character cards into a `renderCharacterCard`.
+
+Apparently, a description is also needed on the card types.
+
+Also, a description is needed on the `GameStateSpecialEffect`.
+
+Also, a to string override is needed for the `ImageUrlString` type. I set this by overriding all the ToString methods on the `NonEmptyString`, `UrlString` and `ImageUrlString`.
+
+i.e.
+
+```
+type NonEmptyString = private NonEmptyString of string
+    with override this.ToString() = match this with NonEmptyString s -> s
+...
+
+type UrlString = private UrlString of NonEmptyString
+    with override this.ToString() = match this with UrlString s -> s.ToString()
+...
+
+type ImageUrlString = private ImageUrlString of UrlString
+    with override this.ToString() = match this with ImageUrlString s -> s.ToString()
+
+```
