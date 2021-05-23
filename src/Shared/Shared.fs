@@ -85,18 +85,44 @@ module Domain =
     and CardInstance =
         {
             CardIntanceId : CardInstanceId
-            Card: CardId
+            Card: Card
         }
     and Card =
        CharacterCard of CharacterCard
        | EffectCard of EffectCard
        | ResourceCard of ResourceCard
     and CharacterCard
-        = { CardId: CardId; Name: string; Creature: Creature; ResourceCost: ResourcePool; PrimaryResource: Resource; EnterSpecialEffects: GameStateSpecialEffect; ExitSpecialEffects: GameStateSpecialEffect}
+        = { CardId: CardId;
+            Name: string;
+            Creature: Creature;
+            ImageUrl: ImageUrlString;
+            ResourceCost: ResourcePool;
+            PrimaryResource: Resource;
+            EnterSpecialEffects: Option<GameStateSpecialEffect>;
+            ExitSpecialEffects: Option<GameStateSpecialEffect>
+          }
     and EffectCard
-        = { CardId: CardId; Name: string; ResourceCost: ResourcePool; PrimaryResource: Resource; EnterSpecialEffects: GameStateSpecialEffect; ExitSpecialEffects: GameStateSpecialEffect; }
+        = {
+            CardId: CardId;
+            Name: string;
+            ResourceCost: ResourcePool;
+            ImageUrl: ImageUrlString;
+            PrimaryResource: Resource;
+            EnterSpecialEffects: Option<GameStateSpecialEffect>;
+            ExitSpecialEffects: Option<GameStateSpecialEffect>;
+        }
     and ResourceCard
-        = { CardId: CardId; Name: string; ResourceCost: ResourcePool; PrimaryResource: Resource; EnterSpecialEffects: GameStateSpecialEffect; ExitSpecialEffects: GameStateSpecialEffect; ResourceAvailableOnFirstTurn: bool; ResourcesAdded: ResourcePool}
+        = {
+            CardId: CardId;
+            Name: string;
+            ResourceCost: ResourcePool;
+            ImageUrl: ImageUrlString;
+            PrimaryResource: Resource;
+            EnterSpecialEffects: Option<GameStateSpecialEffect>;
+            ExitSpecialEffects: Option<GameStateSpecialEffect>;
+            ResourceAvailableOnFirstTurn: bool;
+            ResourcesAdded: ResourcePool
+        }
     and GameStateSpecialEffect = delegate of GameState -> GameState
     and Creature =
         {
@@ -108,7 +134,7 @@ module Domain =
         {
             Damage: int
             Cost: ResourcePool
-            SpecialEffect: GameStateSpecialEffect
+            SpecialEffect: Option<GameStateSpecialEffect>
         }
     and SpecialCondition = Asleep | Burned | Confused | Paralyzed | Poisoned
     and InPlayCreature =

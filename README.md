@@ -130,7 +130,7 @@ type Creature =
     {
         Health: int
         Weaknesses: Resource list
-        Attach: Attack list
+        Attacks: Attack list
     }
 type Attack =
     {
@@ -684,3 +684,272 @@ let playerBoard player =
 ```
 
 This was not working for me. I spent a long time trying to figure out why. The end answer was that my ImageUrlString build method needed a `not` and was actaully verifying that the image url was invalid.
+
+Now it is once again loading the page and I am able to start padding these values to my layout parts.
+
+First I will pass the oponent `Player` and `PlayerBoard` to the `enemyStats` and plug those in.
+
+
+Similarly, I will do the same for the player control center.
+
+
+Here I can notice that the health, hand, deck and discard itmes are shared between the two nav bars and extract that as a shared function.
+
+I therefore pulled out a playerStats function:
+
+```
+let playerStats  (player: Player) (playerBoard: PlayerBoard) =
+    [             div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "💓 %i/10" player.RemainingLifePoints) ] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "🤚 %i" playerBoard.Hand.Cards.Length) ] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "🂠 %i" playerBoard.Deck.Cards.Length) ] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "🗑️ %i" playerBoard.DiscardPile.Cards.Length)] ] ]
+
+```
+
+I can also pull out the step inforamtion into a `currentStepInformation` function. I can then utilize if it is the players turn and the GameState.CurrentStep to select the classes for the steps like:
+
+```
+let yourCurrentStepClasses (player: Player) (gameState : GameState) (gamesStep: GameStep) =
+    if not (player.PlayerId = gameState.CurrentPlayer) then "button is-primary"
+    else
+        if gameState.CurrentStep = gamesStep then "button is-danger"
+        else "button is-primary"
+
+let currentStepInformation (player: Player) (playerBoard: PlayerBoard) (gameState : GameState) =
+    div [ Class "navbar-item" ]
+                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
+                        [ p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Draw)
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Draw" ] ] ]
+                          p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Play)
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Play" ] ] ]
+                          p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Attack)
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Attack" ] ] ]
+                          p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Reconcile)
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Reconcile" ] ] ] ] ]
+```
+
+All this builds so I am not able to try to populate the Player Hand from the PlayerBoard.Hand. This can be rendered by rendering each card from the list in a yield.
+
+I can do this like
+```
+let renderCardForHand (card: Card) =
+  div [ Class "column is-4" ]
+                [ div [ Class "card" ]
+                    [ header [ Class "card-header" ]
+                        [ p [ Class "card-header-title" ]
+                            [ str "Card Name" ]
+                          p [ Class "card-header-icon" ]
+                            [ str "🍂 x4" ] ]
+                      div [ Class "card-image" ]
+                        [ figure [ Class "image is-4by3" ]
+                            [ img [ Src "https://picsum.photos/320/200?1"
+                                    Alt "Placeholder image"
+                                    Class "is-fullwidth" ] ] ]
+                      div [ Class "card-content" ]
+                        [ div [ Class "content" ]
+                            [ p [ Class "is-italic" ]
+                                [ str "This is a sweet description." ]
+                              p [ Class "is-italic" ]
+                                [ strong [ ]
+                                    [ str "On Enter Playing Field" ]
+                                  str ": Effect description." ]
+                              p [ Class "is-italic" ]
+                                [ strong [ ]
+                                    [ str "On Exit Playing Field" ]
+                                  str ": Effect description." ]
+                              h5 [ Class "IsTitle is5" ]
+                                [ str "Attacks" ]
+                              table [ ]
+                                [ tr [ ]
+                                    [ td [ ]
+                                        [ str "🍂 x1" ]
+                                      td [ ]
+                                        [ str "Leaf Cut" ]
+                                      td [ ]
+                                        [ str "10" ] ]
+                                  tr [ ]
+                                    [ td [ ]
+                                        [ str "🍂 x2" ]
+                                      td [ ]
+                                        [ str "Vine Whip" ]
+                                      td [ ]
+                                        [ str "30" ] ] ] ] ]
+                      footer [ Class "card-footer" ]
+                        [ a [ Href "#"
+                              Class "card-footer-item" ]
+                            [ str "Play" ]
+                          a [ Href "#"
+                              Class "card-footer-item" ]
+                            [ str "Discard" ] ] ] ]
+
+let renderCardInstanceForHand (card: CardInstance) =
+    renderCardForHand card.Card
+
+let playerHand (hand : Hand) =
+  section [ Class "section" ]
+    [ div [ Class "container py-4" ]
+        [ h3 [ Class "title is-spaced is-4" ]
+            [ str "Hand" ]
+          div [ Class "columns is-mobile mb-5" ]
+            [ yield! Seq.map renderCardInstanceForHand hand.Cards ] ] ]
+
+```
+
+Next to see some data I will have to populate some hand data into the init object.
+
+To do this I am going to create a `testCardSeqGenerator` function. This will take a number and return that number of randomly generated cards.
+
+While doing this I realized the all the `GameStateSpecialEffect` in the cards and attacks should be Optional and updated the domain like
+```
+    and CharacterCard
+        = { CardId: CardId;
+            Name: string;
+            Creature: Creature;
+            ResourceCost: ResourcePool;
+            PrimaryResource: Resource;
+            EnterSpecialEffects: Option<GameStateSpecialEffect>;
+            ExitSpecialEffects: Option<GameStateSpecialEffect>
+          }
+    and EffectCard
+        = {
+            CardId: CardId;
+            Name: string;
+            ResourceCost: ResourcePool;
+            PrimaryResource: Resource;
+            EnterSpecialEffects: Option<GameStateSpecialEffect>;
+            ExitSpecialEffects: Option<GameStateSpecialEffect>;
+        }
+    and ResourceCard
+        = {
+            CardId: CardId;
+            Name: string;
+            ResourceCost: ResourcePool;
+            PrimaryResource: Resource;
+            EnterSpecialEffects: Option<GameStateSpecialEffect>;
+            ExitSpecialEffects: Option<GameStateSpecialEffect>;
+            ResourceAvailableOnFirstTurn: bool;
+            ResourcesAdded: ResourcePool
+        }
+    ...
+    and Attack =
+        {
+            Damage: int
+            Cost: ResourcePool
+            SpecialEffect: Option<GameStateSpecialEffect>
+        }
+
+```
+
+After playing around for a while I was eventually able to create functions to generate test data:
+
+```
+
+let testCardGenerator cardInstanceIdStr cardIdStr =
+
+    let cardInstanceId = NonEmptyString.build cardInstanceIdStr |> Result.map CardInstanceId
+
+    let cardId = NonEmptyString.build cardInstanceIdStr |> Result.map CardId
+
+    match cardInstanceId, cardId with
+    | Ok id, Ok cid ->
+        let creature =
+          {
+            Health= 95
+            Weaknesses=  List.empty
+            Attach = List.empty
+          }
+        let card =
+            {
+                CardId = cid
+                ResourceCost = [ Resource.Grass, 4;
+                                 Resource.Colorless, 1 ] |> Seq.ofList |> ResourcePool
+                Name = cardIdStr
+                EnterSpecialEffects = None
+                ExitSpecialEffects = None
+                PrimaryResource = Resource.Grass
+                Creature = creature
+            }
+        Ok  {
+                CardIntanceId  =  id
+                Card =  card |> CharacterCard
+            }
+    | _, _ ->
+        sprintf "Unable to create card instance for %s\t%s" cardInstanceIdStr cardIdStr
+        |> Error
+
+let testCardSeqGenerator (numberOfCards : int) =
+    seq { 0 .. (numberOfCards - 1) }
+    |> Seq.map (sprintf "Exciting Character #%i")
+    |> Seq.map (fun x -> testCardGenerator x x)
+    |> Seq.map (fun x ->
+                        match x with
+                        | Ok s -> [ s ] |> Ok
+                        | Error e -> e |> Error)
+    |> Seq.fold (fun x y ->
+                    match x, y with
+                    | Ok accum, Ok curr -> curr @ accum |> Ok
+                    | _,_ -> "Eating Errors lol" |> Error
+                ) (Ok List.empty)
+```
+
+One of the major issues I encountered was transforming the Sequence of results into a Result of a sequence. I ended up having to map the Seq<Result<Card, string>> to a Seq<Result<Card list, string>> and fold across that.
+
+I was then able to update the `playerBoard` function to
+
+```
+
+let playerBoard (player : Player) =
+    let deckTemp =  testCardSeqGenerator 35
+    let handTemp = testCardSeqGenerator 3
+
+    match deckTemp, handTemp with
+    | Ok deck, Ok hand ->
+        Ok  {
+                PlayerId=  player.PlayerId
+                Deck= {
+                    TopCardsExposed = 0
+                    Cards =  deck
+                }
+                Hand=
+                    {
+                        Cards = hand
+                    }
+                ActiveCreature= None
+                Bench=  None
+                DiscardPile= {
+                    TopCardsExposed = 0
+                    Cards = List.empty
+                }
+                TotalResourcePool= ResourcePool Seq.empty
+                AvailableResourcePool =  ResourcePool Seq.empty
+            }
+    | _,_ -> "Error creating deck or hand" |> Error
+```
+
+I feel like there has to be a much better way to deal with these Result types but I am goign to keep driving on and revisit later.
+
+In building out this generator I realized I needed to add an image url for the cards so I added an `ImageUrl` to the types of type `ImageUrlString` and added this to the builder.
