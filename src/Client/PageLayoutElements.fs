@@ -4,6 +4,7 @@ open Elmish
 open Fable.React
 open Fable.React.Props
 open Fulma
+open Shared.Domain
 
 let topNavigation =
   nav [ Class "navbar is-dark" ]
@@ -684,15 +685,44 @@ let footerBand =
                 [ p [ Class "subtitle is-6" ]
                     [ str "© ??" ] ] ] ] ]
 
-let mainLayout =
-  div [ Class "container is-fluid" ]
-    [ topNavigation
-      br [ ]
-      br [ ]
-      enemyStats
-      enemyCreatures
-      playerControlCenter
-      playerCreatures
-      playerHand
-      footerBand
-    ]
+let opponentPlayer (model : GameState) =
+    match model.Players.TryGetValue model.OpponentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate oppponent in player list" |> Error
+
+
+let opponentPlayerBoard (model : GameState) =
+    match model.Boards.TryGetValue model.OpponentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate oppponent in board list" |> Error
+
+let currentPlayer (model : GameState) =
+    match model.Players.TryGetValue model.CurrentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate current player in player list" |> Error
+
+
+let currentPlayerBoard (model : GameState) =
+    match model.Boards.TryGetValue model.CurrentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate current player in board list" |> Error
+
+let extractNeededModelsFromState (model: GameState) =
+    opponentPlayer model, opponentPlayerBoard model, currentPlayer model, currentPlayerBoard model
+
+
+let mainLayout  model dispatch =
+  match extractNeededModelsFromState model with
+  | Ok op, Ok opb, Ok cp, Ok cpb ->
+      div [ Class "container is-fluid" ]
+        [ topNavigation
+          br [ ]
+          br [ ]
+          enemyStats
+          enemyCreatures
+          playerControlCenter
+          playerCreatures
+          playerHand
+          footerBand
+        ]
+  | _ -> strong [] [ str "Error in GameState encountered." ]

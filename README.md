@@ -411,3 +411,243 @@ After viewing the page a few elements had to be rearranged and some changes had 
 For the next step, we will try to make the output actually pull information from the GameState model and break down these general page parts into smaller and more usable parts.
 
 This is the final commit in the `step-4-implement-layout-in-client` branch.
+
+### Wire up Layout to the GameState and BReaking it in to Smaller Parts
+
+The first thing I need to do is alter the init() in the `Index.fs` to return a tuple with a GamesState instead of a Model. I am then going to work through the errors until everything compiles.
+
+In order to alter the init() I will have to come up with what the initial state should be. By the end of this  section I am going to manually add some information (i.e. not leave it in a new game state) so that something is happening on the screen to render.
+
+
+First I set up my type like:
+
+```
+    let model =
+        {
+            Players =  Map.empty
+            Boards = Map.empty
+            CurrentTurn = None
+            CurrentStep=  GameStep
+            TurnNumber = 1
+        }
+```
+
+I then also deleted the Model type and updated the `Msg` type to consist solely of a GameStarted type.
+
+I then had to update the cmd of the init() like
+``` let cmd = Cmd.ofMsg GameStarted ```
+so that it returned a valid cmd and update the `update` function
+to only match on the `GamesStarted` type.
+
+i.e.
+```
+let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
+    match msg with
+    | GameStarted ->
+        model, Cmd.none
+```
+
+
+I was not able to save and it compiled
+
+
+Next I will need to wire in the model part by part into the layout potentially updating the domain with missing items as I go.
+
+The first thing I noticed is that I didn't have any sort of validation that my Id's were non empty so I added some by defining a `NonEmptyString` type, making the constructor private and adding a NonEmptyString namespace witha  build function that creates a NonEmptyString after validating the provided string is not null or whitespace.
+
+```
+type NonEmptyString = private NonEmptyString of string
+module NonEmptyString =
+    let build str =
+        if String.IsNullOrWhiteSpace str then "Value cannot be empty" |> Error
+        else str |> NonEmptyString |> Ok
+
+```
+
+I then moved the domain types into a `Domain` module and made the various Ids types of NonEmptyStrings.
+
+i.e.
+```
+module Domain =
+
+    type PlayerId = NonEmptyString
+    type CardInstanceId = NonEmptyString
+    type CardId = NonEmptyString
+    type InPlayCreatureId = NonEmptyString
+
+    type Player =
+        { ...
+```
+
+I then added the arguements `model` and `dispatch` to pass through from the `view` to the `mainLayout`.
+
+Inside the mainLayout the enemyStats and enemyCreatures will depend on the opponent `Player` and opponent `PlayerBoard`
+and  `playerCreatures` and `playerHand` will depend on your `PlayerBoard` and the `playerControlCenter` will depend on the entire `GameState`.
+
+First, we will need to pull out the opponent and player board and player but I have noticed that the GamesState does not define the current player vs the opponent so I am adding a property to the GameState to store this information.
+
+i.e.
+```
+    and GameState =
+        {
+            CurrentPlayer: PlayerId
+            OpponentPlayer: PlayerId
+            ...
+```
+
+I then wrote functions to extract the needed information, wrapped them in results and a single function to extract all the data.
+
+I then wrapped the main layout to verify no errors were encountered in building the models and changed the function to return an error message if any issues are encountered.
+
+i.e.
+
+```
+
+let opponentPlayer (model : GameState) =
+    match model.Players.TryGetValue model.OpponentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate oppponent in player list" |> Error
+
+
+let opponentPlayerBoard (model : GameState) =
+    match model.Boards.TryGetValue model.OpponentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate oppponent in board list" |> Error
+
+let currentPlayer (model : GameState) =
+    match model.Players.TryGetValue model.CurrentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate current player in player list" |> Error
+
+
+let currentPlayerBoard (model : GameState) =
+    match model.Boards.TryGetValue model.CurrentPlayer with
+    | true, p -> p |> Ok
+    | false, _ -> "Unable to locate current player in board list" |> Error
+
+let extractNeededModelsFromState (model: GameState) =
+    opponentPlayer model, opponentPlayerBoard model, currentPlayer model, currentPlayerBoard model
+
+
+let mainLayout  model dispatch =
+  match extractNeededModelsFromState model with
+  | Ok op, Ok opb, Ok cp, Ok cpb ->
+      div [ Class "container is-fluid" ]
+        [ topNavigation
+          br [ ]
+          br [ ]
+          enemyStats
+          enemyCreatures
+          playerControlCenter
+          playerCreatures
+          playerHand
+          footerBand
+        ]
+  | _ -> strong [] [ str "Error in GameState encountered." ]
+```
+
+Looking furture at teh `Player` definitino I see that it is missing a playmat url for there background graphic. I added that as well as definitions for two new primates domain types which should only hold valid urls:
+
+```
+
+type UrlString = private UrlString of NonEmptyString
+module UrlString =
+    let build str =
+        if Uri.IsWellFormedUriString(str, UriKind.RelativeOrAbsolute) then "Value must be a url." |> Error
+        else str |> NonEmptyString.build |> Result.map UrlString
+
+
+type ImageUrlString = private ImageUrlString of UrlString
+module ImageUrlString =
+
+    let isUrlImage (str : string) =
+        let ext  = Path.GetExtension(str)
+        if String.IsNullOrWhiteSpace ext then false
+        else
+            match str with
+            | "png" | "jpg" ->
+                true
+            | _ -> false
+
+    let build str =
+        if isUrlImage str then "Value must be a url pointing to iamge." |> Error
+        else str |> UrlString.build |> Result.map ImageUrlString
+
+```
+
+and
+
+```
+
+    type Player =
+        {
+            PlayerId: PlayerId
+            Name: string
+            PlaymatUrl: ImageUrlString
+            RemainingLifePoints: int
+        }
+
+```
+
+In the Init I now have to add PlayerIds for the opponent and and current player. To do this I created a createPlayer function which takes a playerIdStr playerName playerCurrentLife playerPlaymatUrl and returns a `Player`.
+
+```
+let createPlayer playerIdStr playerName playerCurrentLife playerPlaymatUrl =
+    let playerId = NonEmptyString.build playerIdStr |> Result.map PlayerId
+    let playerPlaymatUrl = ImageUrlString.build playerPlaymatUrl
+
+    match playerId, playerPlaymatUrl with
+    | Ok s, Ok pm ->
+        Ok {
+           PlayerId = s
+           Name = playerName
+           RemainingLifePoints = playerCurrentLife
+           PlaymatUrl = pm
+        }
+    | _ -> Error "Unable to create player"
+```
+
+I then modified the init to create two players and plug them into the GameState. In doing this modification I had to switch the init to return a Result type.
+
+i.e.
+
+```
+let init =
+    let player1 = createPlayer "Player1" "Player1" 10 "https://picsum.photos/id/1000/2500/1667?blur=5"
+    let player2 = createPlayer "Player2" "Player2" 10 "https://picsum.photos/id/10/2500/1667?blur=5'"
+    match player1, player2 with
+    | Ok p1, Ok p2 ->
+        let model =
+            {
+                Players =  Map.empty
+                Boards = Map.empty
+                CurrentTurn = None
+                CurrentStep=  NotCurrentlyPlaying
+                TurnNumber = 1
+                CurrentPlayer = p1.PlayerId
+                OpponentPlayer = p2.PlayerId
+            }
+        let cmd = Cmd.ofMsg GameStarted
+        Ok (model, cmd)
+    | _ -> "Failed to create players" |> Error
+```
+
+
+I then had to modify the App.fs in the client to accept a result set back from the init like
+
+```
+
+match Index.init with
+| Ok (gamesState, dispatch) ->
+    let placeHolderFunc () =
+        gamesState, dispatch
+    Program.mkProgram placeHolderFunc Index.update Index.view
+    ...
+```
+
+At this point I ran into an error where the methods I was using from Path and Uri to validate the urls are not implemented in FABLE. While FABLE impliments a lareg part of the .NET framework some parts are not implemented. for now I basically made the functions just validate that the strings not null.
+
+
+It now builds and displays the `Error in GameState encountered.` message from the view definition (since the players and boards are not registered in there respective maps).
+
+Now I will have to update the init to populate these values.
