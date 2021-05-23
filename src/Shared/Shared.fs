@@ -39,7 +39,7 @@ module ImageUrlString =
             | _ -> false *)
 
     let build str =
-        if isUrlImage str then "Value must be a url pointing to iamge." |> Error
+        if not (isUrlImage str) then "Value must be a url pointing to iamge." |> Error
         else str |> UrlString.build |> Result.map ImageUrlString
 
 module Domain =

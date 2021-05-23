@@ -651,3 +651,36 @@ At this point I ran into an error where the methods I was using from Path and Ur
 It now builds and displays the `Error in GameState encountered.` message from the view definition (since the players and boards are not registered in there respective maps).
 
 Now I will have to update the init to populate these values.
+
+I updated the Players value to
+```
+
+                Players =  [
+                            p1.PlayerId, p1;
+                            p2.PlayerId, p2
+                           ] |> Map.ofList
+```
+
+Additionally, I will need to create a function to generate a player board.
+
+```
+let playerBoard player =
+    {
+            PlayerId=  player.PlayerId
+            Deck= {
+                TopCardsExposed = 0
+                Cards =  List.empty
+            }
+            Hand= { Cards = List.empty }
+            ActiveCreature= None
+            Bench=  None
+            DiscardPile= {
+                TopCardsExposed = 0
+                Cards = List.empty
+            }
+            TotalResourcePool= ResourcePool Seq.empty
+            AvailableResourcePool =  ResourcePool Seq.empty
+    }
+```
+
+This was not working for me. I spent a long time trying to figure out why. The end answer was that my ImageUrlString build method needed a `not` and was actaully verifying that the image url was invalid.
