@@ -546,7 +546,7 @@ let mainLayout  model dispatch =
   | _ -> strong [] [ str "Error in GameState encountered." ]
 ```
 
-Looking furture at teh `Player` definitino I see that it is missing a playmat url for there background graphic. I added that as well as definitions for two new primates domain types which should only hold valid urls:
+Looking further at the `Player` definition I see that it is missing a playmat URL for their background graphic. I added that as well as definitions for two new primates domain types which should only hold valid URLs:
 
 ```
 
@@ -645,10 +645,10 @@ match Index.init with
     ...
 ```
 
-At this point I ran into an error where the methods I was using from Path and Uri to validate the urls are not implemented in FABLE. While FABLE impliments a lareg part of the .NET framework some parts are not implemented. for now I basically made the functions just validate that the strings not null.
+At this point, I ran into an error where the methods I was using from Path and Uri to validate the URLs are not implemented in FABLE. While FABLE implements a large part of the .NET framework some parts are not implemented. for now, I basically made the functions just to validate that the strings not null.
 
 
-It now builds and displays the `Error in GameState encountered.` message from the view definition (since the players and boards are not registered in there respective maps).
+It now builds and displays the `Error in GameState encountered.` message from the view definition (since the players and boards are not registered in their respective maps).
 
 Now I will have to update the init to populate these values.
 
@@ -683,19 +683,19 @@ let playerBoard player =
     }
 ```
 
-This was not working for me. I spent a long time trying to figure out why. The end answer was that my ImageUrlString build method needed a `not` and was actaully verifying that the image url was invalid.
+This was not working for me. I spent a long time trying to figure out why. The end answer was that my ImageUrlString build method needed a `not` and was actually verifying that the image URL was invalid.
 
 Now it is once again loading the page and I am able to start padding these values to my layout parts.
 
-First I will pass the oponent `Player` and `PlayerBoard` to the `enemyStats` and plug those in.
+First I will pass the opponent `Player` and `PlayerBoard` to the `enemyStats` and plug those in.
 
 
 Similarly, I will do the same for the player control center.
 
 
-Here I can notice that the health, hand, deck and discard itmes are shared between the two nav bars and extract that as a shared function.
+Here I can notice that the health, hand, deck and discard items are shared between the two nav bars and extract that as a shared function.
 
-I therefore pulled out a playerStats function:
+I, therefore, pulled out a playerStats function:
 
 ```
 let playerStats  (player: Player) (playerBoard: PlayerBoard) =
@@ -718,7 +718,7 @@ let playerStats  (player: Player) (playerBoard: PlayerBoard) =
 
 ```
 
-I can also pull out the step inforamtion into a `currentStepInformation` function. I can then utilize if it is the players turn and the GameState.CurrentStep to select the classes for the steps like:
+I can also pull out the step information into a `currentStepInformation` function. I can then utilize if it is the player's turn and the GameState.CurrentStep to select the classes for the steps like:
 
 ```
 let yourCurrentStepClasses (player: Player) (gameState : GameState) (gamesStep: GameStep) =
@@ -950,9 +950,9 @@ let playerBoard (player : Player) =
     | _,_ -> "Error creating deck or hand" |> Error
 ```
 
-I feel like there has to be a much better way to deal with these Result types but I am goign to keep driving on and revisit later.
+I feel like there has to be a much better way to deal with these Result types but I am going to keep driving on and revisit later.
 
-In building out this generator I realized I needed to add an image url for the cards so I added an `ImageUrl` to the types of type `ImageUrlString` and added this to the builder.
+In building out this generator I realized I needed to add an image URL for the cards so I added an `ImageUrl` to the types of type `ImageUrlString` and added this to the builder.
 
 Now I need to update the `renderCardForHand`. First I switch the card type and push the character cards into a `renderCharacterCard`.
 
@@ -960,7 +960,7 @@ Apparently, a description is also needed on the card types.
 
 Also, a description is needed on the `GameStateSpecialEffect`.
 
-Also, a to string override is needed for the `ImageUrlString` type. I set this by overriding all the ToString methods on the `NonEmptyString`, `UrlString` and `ImageUrlString`.
+Also, a to string override is needed for the `ImageUrlString` type. I set this by overriding all the ToString methods on the `NonEmptyString`, `UrlString`, and `ImageUrlString`.
 
 i.e.
 
@@ -977,3 +977,9 @@ type ImageUrlString = private ImageUrlString of UrlString
     with override this.ToString() = match this with ImageUrlString s -> s.ToString()
 
 ```
+
+This has proven to be extremely time-consuming and I am calling it quits for the day.
+
+This is the last commit in the branch `step-5-wire-up-layout-to-gamestate`
+
+
