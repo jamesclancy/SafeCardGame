@@ -1083,4 +1083,4 @@ let renderCharacterCard (card: CharacterCard) =
 
 Now I have to plug in the information into the player and enemy creature hopfully reusing much of the previously created functions.
 
-
+First, I can plug in the playmat backgrounds.

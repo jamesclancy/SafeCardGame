@@ -134,7 +134,7 @@ let enemyStats (player: Player) (playerBoard: PlayerBoard) =
 let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
   section [
           Class "section"
-          Style [ Background "url('https://picsum.photos/id/10/2500/1667?blur=5')"
+          Style [ Background (sprintf "url(%s')" (player.PlaymatUrl.ToString()))
                   BackgroundSize "cover"
                   BackgroundRepeat "no-repeat"
                   BackgroundPosition "center center" ] ]
@@ -269,7 +269,7 @@ let playerControlCenter  (player: Player) (playerBoard: PlayerBoard) (gameState 
 let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
   section [
           Class "section"
-          Style [ Background "url('https://picsum.photos/id/1000/2500/1667?blur=5')"
+          Style [ Background (sprintf "url(%s')" (player.PlaymatUrl.ToString()))
                   BackgroundSize "cover"
                   BackgroundRepeat "no-repeat"
                   BackgroundPosition "center center" ] ]
