@@ -88,6 +88,69 @@ let enemyStats (player: Player) (playerBoard: PlayerBoard) =
             [ div [ Class "navbar-start" ]
                 [ yield! playerStats player playerBoard ] ] ] ]
 
+let renderEnemyActiveCreature (inPlayCreature : Option<InPlayCreature>) =
+  match (Option.map (fun x -> (x, x.Card)) inPlayCreature) with
+  | None -> strong [] [ str "No creature in active play" ]
+  | Some (creature, EffectCard card) ->  strong [] [ str "Active creature is not a character?" ]
+  | Some (creature, ResourceCard card) -> strong [] [ str "Active creature is not a character?" ]
+  | Some (creature, CharacterCard card) ->
+        a [ Href "#" ]
+                    [ div [ Class "card" ]
+                        [ header [ Class "card-header" ]
+                            [ p [ Class "card-header-title" ]
+                                [ str (sprintf "✫ %s" card.Name) ]
+                              p [ Class "card-header-icon" ]
+                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - creature.CurrentDamage) card.Creature.Health)
+                                  str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
+                          div [ Class "card-image" ]
+                            [ figure [ Class "image is-4by3" ]
+                                [ img [ Src (card.ImageUrl.ToString())
+                                        Alt card.Name
+                                        Class "is-fullwidth" ] ] ]
+                          div [ Class "card-content" ]
+                            [ div [ Class "content" ]
+                                [ p [ Class "is-italic" ]
+                                    [ str card.Description ]
+                                  h5 [ Class "IsTitle is5" ]
+                                    [ str "Attacks" ]
+                                  table [ ]
+                                    [
+                                        yield! seq {
+                                            for a in card.Creature.Attach do
+                                                (renderAttackRow a)
+                                        } ] ] ] ] ]
+
+let renderEnemyBenchRow inPlayCreature =
+    match inPlayCreature.Card with
+    | EffectCard ec -> strong [] [ str "Bench creature is not a character code" ]
+    | ResourceCard rc -> strong [] [ str "Bench creature is not a character code" ]
+    | CharacterCard card ->
+        tr [ ]
+                            [ td [ ]
+                                [ str card.Name ]
+                              td [ ]
+                                [ str (textDescriptionForListOfSpecialConditions inPlayCreature.SpecialEffect) ]
+                              td [ ]
+                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - inPlayCreature.CurrentDamage) card.Creature.Health)  ] ]
+
+let renderEnemyBench bench  =
+    match bench with
+    | None -> strong [] [ str "No creatures on bench" ]
+    | Some  l->
+                      table [ Class "table is-fullwidth" ]
+                        [ tr [ ]
+                            [ th [ ]
+                                [ str "Creature Name" ]
+                              th [ ]
+                                [ str "Status" ]
+                              th [ ]
+                                [ str "Health" ] ]
+                          yield! seq {
+                                for b in l do
+                                renderEnemyBenchRow b
+                          }
+                        ]
+
 let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
   section [
           Class "section"
@@ -100,74 +163,13 @@ let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
             [ div [ Class "column is-1" ]
                 [ ]
               div [ Class "column is-3" ]
-                [ a [ Href "#" ]
-                    [ div [ Class "card" ]
-                        [ header [ Class "card-header" ]
-                            [ p [ Class "card-header-title" ]
-                                [ str "✫ Card Name" ]
-                              p [ Class "card-header-icon" ]
-                                [ str "50/100 Health"
-                                  str "☠️
-                                    💤" ] ]
-                          div [ Class "card-image" ]
-                            [ figure [ Class "image is-4by3" ]
-                                [ img [ Src "https://picsum.photos/600/300?1"
-                                        Alt "Placeholder image"
-                                        Class "is-fullwidth" ] ] ]
-                          div [ Class "card-content" ]
-                            [ div [ Class "content" ]
-                                [ p [ Class "is-italic" ]
-                                    [ str "This is a sweet description." ]
-                                  h5 [ Class "IsTitle is5" ]
-                                    [ str "Attacks" ]
-                                  table [ ]
-                                    [ tr [ ]
-                                        [ td [ ]
-                                            [ str "🍂 x1" ]
-                                          td [ ]
-                                            [ str "Leaf Cut" ]
-                                          td [ ]
-                                            [ str "10" ] ]
-                                      tr [ ]
-                                        [ td [ ]
-                                            [ str "🍂 x2" ]
-                                          td [ ]
-                                            [ str "Vine Whip" ]
-                                          td [ ]
-                                            [ str "30" ] ] ] ] ] ] ] ]
+                [ renderEnemyActiveCreature playerBoard.ActiveCreature ]
               div [ Class "column is-7" ]
                 [ div [ Class "columns is-mobile is-multiline" ]
                     [ h2 [ Class "title is-4" ]
                         [ str "Bench" ]
-                      table [ Class "table is-fullwidth" ]
-                        [ tr [ ]
-                            [ th [ ]
-                                [ str "Creature Name" ]
-                              th [ ]
-                                [ str "Status" ]
-                              th [ ]
-                                [ str "Health" ] ]
-                          tr [ ]
-                            [ td [ ]
-                                [ str "Creature A" ]
-                              td [ ]
-                                [ ]
-                              td [ ]
-                                [ str "90/100" ] ]
-                          tr [ ]
-                            [ td [ ]
-                                [ str "Creature A" ]
-                              td [ ]
-                                [ ]
-                              td [ ]
-                                [ str "90/100" ] ]
-                          tr [ ]
-                            [ td [ ]
-                                [ str "Creature A" ]
-                              td [ ]
-                                [ ]
-                              td [ ]
-                                [ str "90/100" ] ] ] ] ] ] ] ]
+                      renderEnemyBench playerBoard.Bench
+                    ] ] ] ] ]
 
 let yourCurrentStepClasses (player: Player) (gameState : GameState) (gamesStep: GameStep) =
     if not (player.PlayerId = gameState.CurrentPlayer) then "button is-primary"

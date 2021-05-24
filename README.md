@@ -1103,4 +1103,101 @@ let textDescriptionForListOfSpecialConditions specialConditions =
     | None -> ""
 ```
 
-I am starting to have a number of UI helper functions so I am going to move them into another file/module `GeneralUIHelpers`. I will have to register this file in Client.fsproj making sure it is compiled before the PageLayoutElement.fs
+I am starting to have a number of UI helper functions so I am going to move them into another file/module `GeneralUIHelpers`. I will have to register this file in Client.fsproj making sure it is compiled before the PageLayoutElement.fs.
+
+
+I can now pull out a `renderEnemyActiveCreature` function which takes an optional `InPlayCreature` as well as a `renderEnemyBench` which takes an optional list of `InPlayCreature`s.
+
+I wrote these and modified the enemyCreatures function to be like:
+
+```
+
+let renderEnemyActiveCreature (inPlayCreature : Option<InPlayCreature>) =
+  match (Option.map (fun x -> (x, x.Card)) inPlayCreature) with
+  | None -> strong [] [ str "No creature in active play" ]
+  | Some (creature, EffectCard card) ->  strong [] [ str "Active creature is not a character?" ]
+  | Some (creature, ResourceCard card) -> strong [] [ str "Active creature is not a character?" ]
+  | Some (creature, CharacterCard card) ->
+        a [ Href "#" ]
+                    [ div [ Class "card" ]
+                        [ header [ Class "card-header" ]
+                            [ p [ Class "card-header-title" ]
+                                [ str (sprintf "✫ %s" card.Name) ]
+                              p [ Class "card-header-icon" ]
+                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - creature.CurrentDamage) card.Creature.Health)
+                                  str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
+                          div [ Class "card-image" ]
+                            [ figure [ Class "image is-4by3" ]
+                                [ img [ Src (card.ImageUrl.ToString())
+                                        Alt card.Name
+                                        Class "is-fullwidth" ] ] ]
+                          div [ Class "card-content" ]
+                            [ div [ Class "content" ]
+                                [ p [ Class "is-italic" ]
+                                    [ str card.Description ]
+                                  h5 [ Class "IsTitle is5" ]
+                                    [ str "Attacks" ]
+                                  table [ ]
+                                    [
+                                        yield! seq {
+                                            for a in card.Creature.Attach do
+                                                (renderAttackRow a)
+                                        } ] ] ] ] ]
+
+let renderEnemyBenchRow inPlayCreature =
+    match inPlayCreature.Card with
+    | EffectCard ec -> strong [] [ str "Bench creature is not a character code" ]
+    | ResourceCard rc -> strong [] [ str "Bench creature is not a character code" ]
+    | CharacterCard card ->
+        tr [ ]
+                            [ td [ ]
+                                [ str card.Name ]
+                              td [ ]
+                                [ str (textDescriptionForListOfSpecialConditions inPlayCreature.SpecialEffect) ]
+                              td [ ]
+                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - inPlayCreature.CurrentDamage) card.Creature.Health)  ] ]
+
+
+
+let renderEnemyBench bench  =
+    match bench with
+    | None -> strong [] [ str "No creatures on bench" ]
+    | Some  l->
+                      table [ Class "table is-fullwidth" ]
+                        [ tr [ ]
+                            [ th [ ]
+                                [ str "Creature Name" ]
+                              th [ ]
+                                [ str "Status" ]
+                              th [ ]
+                                [ str "Health" ] ]
+                          yield! seq {
+                                for b in l do
+                                renderEnemyBenchRow b
+                          }
+                        ]
+
+let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
+  section [
+          Class "section"
+          Style [ Background (sprintf "url(%s')" (player.PlaymatUrl.ToString()))
+                  BackgroundSize "cover"
+                  BackgroundRepeat "no-repeat"
+                  BackgroundPosition "center center" ] ]
+    [ div [ Class "container py-r" ]
+        [ div [ Class "columns" ]
+            [ div [ Class "column is-1" ]
+                [ ]
+              div [ Class "column is-3" ]
+                [ renderEnemyActiveCreature playerBoard.ActiveCreature ]
+              div [ Class "column is-7" ]
+                [ div [ Class "columns is-mobile is-multiline" ]
+                    [ h2 [ Class "title is-4" ]
+                        [ str "Bench" ]
+                      renderEnemyBench playerBoard.Bench
+                    ] ] ] ] ]
+```
+
+This now builds (and looks very weird with no content).
+
+I now need to populate some test data for the enemy creatures.
