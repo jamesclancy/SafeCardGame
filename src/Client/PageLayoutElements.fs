@@ -5,66 +5,8 @@ open Fable.React
 open Fable.React.Props
 open Fulma
 open Shared.Domain
+open GeneralUIHelpers
 
-//#region  General UI  Helpers
-
-let getSymbolForResource resource =
-    match resource with
-    | Grass -> "🍂"
-    | Fire -> "🔥"
-    | Water -> "💧"
-    | Lightning -> "⚡"
-    | Psychic -> "🧠"
-    | Fighting -> "👊"
-    | Colorless -> "□"
-
-
-let getSymbolForSpecialCondition status =
-    match status with
-    | Asleep -> "💤"
-    | Burned -> "♨"
-    | Confused -> "❓"
-    | Paralyzed -> "🧊"
-    | Poisoned -> "☠️"
-
-
-let textDescriptionForListOfSpecialConditions specialConditions =
-    match specialConditions with
-    | Some sc -> sc |> Seq.map getSymbolForSpecialCondition |> String.concat ";"
-    | None -> ""
-
-
-
-let textDescriptionForResourcePool (resourcePool : ResourcePool) =
-    resourcePool
-    |> Seq.map (fun x -> sprintf "%s x%i" (getSymbolForResource x.Key) x.Value)
-    |> String.concat ";"
-
-let renderAttackRow (attack: Attack) =
-    match attack.SpecialEffect with
-    | Some se ->
-        tr [ ]
-            [ td [ ]
-                [ str (textDescriptionForResourcePool attack.Cost) ]
-              td [ ]
-                [ str attack.Name ]
-              td [ ]
-                [
-                    p [] [ str (sprintf "%i" attack.Damage) ]
-                    p [] [ str se.Description ]
-                ] ]
-    | None ->
-        tr [ ]
-            [ td [ ]
-                [ str (textDescriptionForResourcePool attack.Cost) ]
-              td [ ]
-                [ str attack.Name ]
-              td [ ]
-                [
-                    p [] [ str (sprintf "%i" attack.Damage) ]
-                ] ]
-
-//#endregion
 
 let topNavigation =
   nav [ Class "navbar is-dark" ]
@@ -117,7 +59,6 @@ let topNavigation =
                               Href "https://github.com/jamesclancy/SafeCardGame" ]
                             [ str "Source" ] ] ] ] ] ] ]
 
-
 let playerStats  (player: Player) (playerBoard: PlayerBoard) =
     [             div [ Class "navbar-item" ]
                     [ a [ Class "button is-primary"
@@ -135,7 +76,6 @@ let playerStats  (player: Player) (playerBoard: PlayerBoard) =
                     [ a [ Class "button is-primary"
                           Href "#" ]
                         [ str (sprintf "🗑️ %i" playerBoard.DiscardPile.Cards.Length)] ] ]
-
 
 let enemyStats (player: Player) (playerBoard: PlayerBoard) =
   nav [ Class "navbar is-fullwidth is-danger" ]
@@ -228,7 +168,6 @@ let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
                                 [ ]
                               td [ ]
                                 [ str "90/100" ] ] ] ] ] ] ] ]
-
 
 let yourCurrentStepClasses (player: Player) (gameState : GameState) (gamesStep: GameStep) =
     if not (player.PlayerId = gameState.CurrentPlayer) then "button is-primary"
@@ -554,7 +493,6 @@ let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
                                               td [ ]
                                                 [ str "30" ] ] ] ] ] ] ] ] ] ] ] ]
 
-
 let displayCardSpecialEffectDetailIfPresent title (value : Option<GameStateSpecialEffect>)=
     match value with
     | Some s ->
@@ -563,7 +501,6 @@ let displayCardSpecialEffectDetailIfPresent title (value : Option<GameStateSpeci
                              [ str title ]
                           str s.Description ]
     | None -> span [] []
-
 
 let renderCharacterCard (card: CharacterCard) =
       div [ Class "column is-4" ]
@@ -606,7 +543,6 @@ let renderCardForHand (card: Card) =
     | CharacterCard c -> renderCharacterCard c
     | _ ->
         strong [] [ str "IDK" ]
-
 
 let renderCardInstanceForHand (card: CardInstance) =
     renderCardForHand card.Card
@@ -657,32 +593,6 @@ let footerBand =
               div [ Class "column has-text-centered has-text-right-tablet" ]
                 [ p [ Class "subtitle is-6" ]
                     [ str "© ??" ] ] ] ] ]
-
-let opponentPlayer (model : GameState) =
-    match model.Players.TryGetValue model.OpponentPlayer with
-    | true, p -> p |> Ok
-    | false, _ -> "Unable to locate oppponent in player list" |> Error
-
-
-let opponentPlayerBoard (model : GameState) =
-    match model.Boards.TryGetValue model.OpponentPlayer with
-    | true, p -> p |> Ok
-    | false, _ -> "Unable to locate oppponent in board list" |> Error
-
-let currentPlayer (model : GameState) =
-    match model.Players.TryGetValue model.CurrentPlayer with
-    | true, p -> p |> Ok
-    | false, _ -> "Unable to locate current player in player list" |> Error
-
-
-let currentPlayerBoard (model : GameState) =
-    match model.Boards.TryGetValue model.CurrentPlayer with
-    | true, p -> p |> Ok
-    | false, _ -> "Unable to locate current player in board list" |> Error
-
-let extractNeededModelsFromState (model: GameState) =
-    opponentPlayer model, opponentPlayerBoard model, currentPlayer model, currentPlayerBoard model
-
 
 let mainLayout  model dispatch =
   match extractNeededModelsFromState model with

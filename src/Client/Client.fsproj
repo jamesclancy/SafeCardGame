@@ -7,6 +7,7 @@
     <ItemGroup>
         <None Include="index.html" />
         <None Include="paket.references" />
+        <Compile Include="GeneralUIHelpers.fs" />
         <Compile Include="PageLayoutElements.fs" />
         <Compile Include="Index.fs" />
         <Compile Include="App.fs" />

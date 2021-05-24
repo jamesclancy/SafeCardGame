@@ -1103,4 +1103,4 @@ let textDescriptionForListOfSpecialConditions specialConditions =
     | None -> ""
 ```
 
-
+I am starting to have a number of UI helper functions so I am going to move them into another file/module `GeneralUIHelpers`. I will have to register this file in Client.fsproj making sure it is compiled before the PageLayoutElement.fs
