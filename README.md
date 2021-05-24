@@ -983,3 +983,104 @@ This has proven to be extremely time-consuming and I am calling it quits for the
 This is the last commit in the branch `step-5-wire-up-layout-to-gamestate`
 
 
+
+### Wiring up the Layout to the GameState Part 2
+---
+
+Now I am going to continue to wire up the layout to the GameState. Previously, I was able to generate some cards and decks. Doing that I realize I can pull out a function to map Resources to a symbol.
+
+In order to fasiliate this mapping I created a function:
+
+```
+let getSymbolForResource resource =
+    match resource with
+    | Grass -> "🍂"
+    | Fire -> "🔥"
+    | Water -> "💧"
+    | Lightning -> "⚡"
+    | Psychic -> "🧠"
+    | Fighting -> "👊"
+    | Colorless -> "□"
+```
+
+Using this I can create a function mapping a `ResourcePool' to a string like:
+
+```
+let textDescriptionForResourcePool (resourcePool : ResourcePool) =
+    resourcePool
+    |> Seq.map (fun x -> sprintf "%s x%i" (getSymbolForResource x.Key) x.Value)
+    |> String.concat ";"
+```
+
+Using this funciton I can break out a renderAttackRow function. I doing this I had to add a Name property to the `Attack` type. After adding the `Name` I can craete a method like:
+
+```
+
+let renderAttackRow (attack: Attack) =
+    match attack.SpecialEffect with
+    | Some se ->
+        tr [ ]
+            [ td [ ]
+                [ str (textDescriptionForResourcePool attack.Cost) ]
+              td [ ]
+                [ str attack.Name ]
+              td [ ]
+                [
+                    p [] [ str (sprintf "%i" attack.Damage) ]
+                    p [] [ str se.Description ]
+                ] ]
+    | None ->
+        tr [ ]
+            [ td [ ]
+                [ str (textDescriptionForResourcePool attack.Cost) ]
+              td [ ]
+                [ str attack.Name ]
+              td [ ]
+                [
+                    p [] [ str (sprintf "%i" attack.Damage) ]
+                ] ]
+```
+
+and refrence it like
+
+```
+let renderCharacterCard (card: CharacterCard) =
+      div [ Class "column is-4" ]
+                [ div [ Class "card" ]
+                    [ header [ Class "card-header" ]
+                        [ p [ Class "card-header-title" ]
+                            [ str card.Name ]
+                          p [ Class "card-header-icon" ]
+                            [ str (textDescriptionForResourcePool card.ResourceCost) ] ]
+                      div [ Class "card-image" ]
+                        [ figure [ Class "image is-4by3" ]
+                            [ img [ Src (card.ImageUrl.ToString())
+                                    Alt card.Name
+                                    Class "is-fullwidth" ] ] ]
+                      div [ Class "card-content" ]
+                        [ div [ Class "content" ]
+                            [ p [ Class "is-italic" ]
+                                [ str card.Description ]
+                              displayCardSpecialEffectDetailIfPresent "On Enter Playing Field" card.EnterSpecialEffects
+                              displayCardSpecialEffectDetailIfPresent "On Exit Playing Field" card.ExitSpecialEffects
+                              h5 [ Class "IsTitle is5" ]
+                                [ str "Attacks" ]
+                              table [ ]
+                                [
+                                  yield! seq {
+                                    for a in card.Creature.Attach do
+                                      (renderAttackRow a)
+                                  }
+                                ] ] ]
+                      footer [ Class "card-footer" ]
+                        [ a [ Href "#"
+                              Class "card-footer-item" ]
+                            [ str "Play" ]
+                          a [ Href "#"
+                              Class "card-footer-item" ]
+                            [ str "Discard" ] ] ] ]
+```
+
+Now I have to plug in the information into the player and enemy creature hopfully reusing much of the previously created functions.
+
+

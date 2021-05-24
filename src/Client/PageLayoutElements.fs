@@ -6,6 +6,49 @@ open Fable.React.Props
 open Fulma
 open Shared.Domain
 
+//#region  General UI  Helpers
+
+let getSymbolForResource resource =
+    match resource with
+    | Grass -> "🍂"
+    | Fire -> "🔥"
+    | Water -> "💧"
+    | Lightning -> "⚡"
+    | Psychic -> "🧠"
+    | Fighting -> "👊"
+    | Colorless -> "□"
+
+let textDescriptionForResourcePool (resourcePool : ResourcePool) =
+    resourcePool
+    |> Seq.map (fun x -> sprintf "%s x%i" (getSymbolForResource x.Key) x.Value)
+    |> String.concat ";"
+
+let renderAttackRow (attack: Attack) =
+    match attack.SpecialEffect with
+    | Some se ->
+        tr [ ]
+            [ td [ ]
+                [ str (textDescriptionForResourcePool attack.Cost) ]
+              td [ ]
+                [ str attack.Name ]
+              td [ ]
+                [
+                    p [] [ str (sprintf "%i" attack.Damage) ]
+                    p [] [ str se.Description ]
+                ] ]
+    | None ->
+        tr [ ]
+            [ td [ ]
+                [ str (textDescriptionForResourcePool attack.Cost) ]
+              td [ ]
+                [ str attack.Name ]
+              td [ ]
+                [
+                    p [] [ str (sprintf "%i" attack.Damage) ]
+                ] ]
+
+//#endregion
+
 let topNavigation =
   nav [ Class "navbar is-dark" ]
     [ div [ Class "container" ]
@@ -504,6 +547,7 @@ let displayCardSpecialEffectDetailIfPresent title (value : Option<GameStateSpeci
                           str s.Description ]
     | None -> span [] []
 
+
 let renderCharacterCard (card: CharacterCard) =
       div [ Class "column is-4" ]
                 [ div [ Class "card" ]
@@ -511,11 +555,11 @@ let renderCharacterCard (card: CharacterCard) =
                         [ p [ Class "card-header-title" ]
                             [ str card.Name ]
                           p [ Class "card-header-icon" ]
-                            [ str "🍂 x4" ] ]
+                            [ str (textDescriptionForResourcePool card.ResourceCost) ] ]
                       div [ Class "card-image" ]
                         [ figure [ Class "image is-4by3" ]
                             [ img [ Src (card.ImageUrl.ToString())
-                                    Alt "Placeholder image"
+                                    Alt card.Name
                                     Class "is-fullwidth" ] ] ]
                       div [ Class "card-content" ]
                         [ div [ Class "content" ]
@@ -526,20 +570,12 @@ let renderCharacterCard (card: CharacterCard) =
                               h5 [ Class "IsTitle is5" ]
                                 [ str "Attacks" ]
                               table [ ]
-                                [ tr [ ]
-                                    [ td [ ]
-                                        [ str "🍂 x1" ]
-                                      td [ ]
-                                        [ str "Leaf Cut" ]
-                                      td [ ]
-                                        [ str "10" ] ]
-                                  tr [ ]
-                                    [ td [ ]
-                                        [ str "🍂 x2" ]
-                                      td [ ]
-                                        [ str "Vine Whip" ]
-                                      td [ ]
-                                        [ str "30" ] ] ] ] ]
+                                [
+                                  yield! seq {
+                                    for a in card.Creature.Attach do
+                                      (renderAttackRow a)
+                                  }
+                                ] ] ]
                       footer [ Class "card-footer" ]
                         [ a [ Href "#"
                               Class "card-footer-item" ]

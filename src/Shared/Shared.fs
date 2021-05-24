@@ -143,6 +143,7 @@ module Domain =
     and Attack =
         {
             Damage: int
+            Name: string
             Cost: ResourcePool
             SpecialEffect: Option<GameStateSpecialEffect>
         }
