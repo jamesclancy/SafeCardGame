@@ -1084,3 +1084,23 @@ let renderCharacterCard (card: CharacterCard) =
 Now I have to plug in the information into the player and enemy creature hopfully reusing much of the previously created functions.
 
 First, I can plug in the playmat backgrounds.
+
+Then, I see I can use a mapping function for the `SpecialCondition`s to status symbols similar to what was done for the Resource symbols as well a function which takes an optional list of these condtions and appends them together. *These mapping do rely on emojis, this is not a great idea but I am sticking with it for now*.
+
+Like:
+```
+let getSymbolForSpecialCondition status =
+    match status with
+    | Asleep -> "💤"
+    | Burned -> "♨"
+    | Confused -> "❓"
+    | Paralyzed -> "🧊"
+    | Poisoned -> "☠️"
+
+let textDescriptionForListOfSpecialConditions specialConditions =
+    match specialConditions with
+    | Some sc -> sc |> Seq.map getSymbolForSpecialCondition |> String.concat ";"
+    | None -> ""
+```
+
+

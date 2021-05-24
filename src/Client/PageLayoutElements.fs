@@ -18,6 +18,23 @@ let getSymbolForResource resource =
     | Fighting -> "👊"
     | Colorless -> "□"
 
+
+let getSymbolForSpecialCondition status =
+    match status with
+    | Asleep -> "💤"
+    | Burned -> "♨"
+    | Confused -> "❓"
+    | Paralyzed -> "🧊"
+    | Poisoned -> "☠️"
+
+
+let textDescriptionForListOfSpecialConditions specialConditions =
+    match specialConditions with
+    | Some sc -> sc |> Seq.map getSymbolForSpecialCondition |> String.concat ";"
+    | None -> ""
+
+
+
 let textDescriptionForResourcePool (resourcePool : ResourcePool) =
     resourcePool
     |> Seq.map (fun x -> sprintf "%s x%i" (getSymbolForResource x.Key) x.Value)
