@@ -1201,3 +1201,181 @@ let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
 This now builds (and looks very weird with no content).
 
 I now need to populate some test data for the enemy creatures.
+
+Similar to the cards I am able to generate the data like:
+
+```
+
+let inPlayCreatureGenerator inPlayCreatureIdStr cardInstanceIdStr cardIdStr cardImageUrlStr =
+        let inPlayCreatureId = NonEmptyString.build inPlayCreatureIdStr |> Result.map InPlayCreatureId
+        let card = testCardGenerator cardInstanceIdStr cardIdStr cardImageUrlStr
+
+        match inPlayCreatureId, card with
+        | Ok id, Ok c ->
+            Ok {
+                InPlayCharacterId=  id
+                Card = c.Card
+                CurrentDamage=  0
+                SpecialEffect=  None
+                AttachedEnergy = [ Resource.Grass, 4;
+                                     Resource.Colorless, 1 ] |> Seq.ofList |> ResourcePool
+                SpentEnergy = [ Resource.Grass, 4;
+                                     Resource.Colorless, 1 ] |> Seq.ofList |> ResourcePool
+            }
+        | _, _ -> "Unable to create in play creature." |> Error
+
+
+let inPlayCreatureSeqGenerator (numberOfCards : int) =
+    seq { 0 .. (numberOfCards - 1) }
+    |> Seq.map (fun x -> inPlayCreatureGenerator
+                            (sprintf "ExcitingCharacter%i" x)
+                            (sprintf "ExcitingCharacter%i" x)
+                            (sprintf "Exciting Character #%i" x)
+                            (sprintf "https://picsum.photos/320/200?%i" x))
+    |> Seq.map (fun x ->
+                        match x with
+                        | Ok s -> [ s ] |> Ok
+                        | Error e -> e |> Error)
+    |> Seq.fold (fun x y ->
+                    match x, y with
+                    | Ok accum, Ok curr -> curr @ accum |> Ok
+                    | _,_ -> "Eating Errors lol" |> Error
+                ) (Ok List.empty)
+```
+
+Next I need to modify the player creatures to also reference the state.
+
+Do do this I created three functions:
+
+```
+
+let playerActiveCreature (inPlayCreature : Option<InPlayCreature>) =
+  match (Option.map (fun x -> (x, x.Card)) inPlayCreature) with
+  | None -> strong [] [ str "No creature in active play" ]
+  | Some (creature, EffectCard card) ->  strong [] [ str "Active creature is not a character?" ]
+  | Some (creature, ResourceCard card) -> strong [] [ str "Active creature is not a character?" ]
+  | Some (creature, CharacterCard card) ->
+        a [ Href "#" ]
+                    [ div [ Class "card" ]
+                        [ header [ Class "card-header" ]
+                            [ p [ Class "card-header-title" ]
+                                [ str (sprintf "✫ %s" card.Name) ]
+                              p [ Class "card-header-icon" ]
+                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - creature.CurrentDamage) card.Creature.Health)
+                                  str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
+                          div [ Class "card-image" ]
+                            [ figure [ Class "image is-4by3" ]
+                                [ img [ Src (card.ImageUrl.ToString())
+                                        Alt card.Name
+                                        Class "is-fullwidth" ] ] ]
+                          div [ Class "card-content" ]
+                            [ div [ Class "content" ]
+                                [ p [ Class "is-italic" ]
+                                    [ str card.Description ]
+                                  h5 [ Class "IsTitle is5" ]
+                                    [ str "Attacks" ]
+                                  table [ ]
+                                    [
+                                        yield! seq {
+                                            for a in card.Creature.Attach do
+                                                (renderAttackRow a)
+                                        } ] ] ]
+                          footer [ Class "card-footer" ]
+                            [ a [ Href "#"
+                                  Class "card-footer-item" ]
+                                [ str "Tap Out" ] ] ] ]
+
+let playerBenchCreature (inPlayCreature : InPlayCreature)=
+  match (inPlayCreature, inPlayCreature.Card) with
+  | (creature, EffectCard card) ->  strong [] [ str "Active creature is not a character?" ]
+  | (creature, ResourceCard card) -> strong [] [ str "Active creature is not a character?" ]
+  | (creature, CharacterCard card) ->
+         div [ Class "column is-4-mobile is-12-tablet" ]
+                    [ div [ Class "card" ]
+                        [ header [ Class "card-header" ]
+                            [ p [ Class "card-header-title" ]
+                                [ str card.Name ]
+                              p [ Class "card-header-icon" ]
+                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - creature.CurrentDamage) card.Creature.Health)
+                                  str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
+                          div [ Class "card-image" ]
+                            [ figure [ Class "image is-4by3" ]
+                                [ img [ Src (card.ImageUrl.ToString())
+                                        Alt card.Name
+                                        Class "is-fullwidth" ] ] ]
+                          div [ Class "card-content" ]
+                            [ div [ Class "content" ]
+                                [ p [ Class "is-italic" ]
+                                    [ str card.Description ]
+                                  h5 [ Class "IsTitle is5" ]
+                                    [ str "Attacks" ]
+                                  table [ ]
+                                    [
+                                        yield! seq {
+                                            for a in card.Creature.Attach do
+                                                (renderAttackRow a)
+                                        } ] ] ] ] ]
+
+let playerBench (bench : Option<InPlayCreature list>) columnsInBench =
+    match bench with
+    | None -> strong [] [ str "No creatures on bench."]
+    | Some l ->
+      div [ Class "column is-9"] [
+        div [ Class "container"] [
+          h3 [Class "title is-3"] [str "Bench"]
+          yield! seq {
+            let numberOfRows = (l.Length / columnsInBench)
+            for row in {0 .. numberOfRows }  do
+                let innerl = Seq.truncate columnsInBench (Seq.skip (row * columnsInBench) l)
+
+                div [ Class "columns is-mobile is-multiline" ]
+                    [
+                       yield! seq {
+                           for creature in innerl do
+                            div [ Class (sprintf "column is-%i" (12/columnsInBench)) ] [
+                                playerBenchCreature creature
+                            ]
+                       }
+                    ]
+        } ] ]
+
+
+let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
+  section [
+          Class "section"
+          Style [ Background (sprintf "url('%s')" (player.PlaymatUrl.ToString()))
+                  BackgroundSize "cover"
+                  BackgroundRepeat "no-repeat"
+                  BackgroundPosition "center center" ] ]
+    [ div [ Class "container py-r" ] [
+          div [ Class "columns" ]
+            [ div [ Class "column is-3" ]
+                [ playerActiveCreature playerBoard.ActiveCreature ]
+              playerBench playerBoard.Bench 4
+
+               ] ] ]
+```
+
+This compiles and displays now. Here note that the playerBench takes an arguement for the number of column to display. I wasn't sure if it should be 3 or 4 cards per column so I made it a variable.
+
+The playerCreatures can then be changed to
+
+```
+
+let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
+  section [
+          Class "section"
+          Style [ Background (sprintf "url('%s')" (player.PlaymatUrl.ToString()))
+                  BackgroundSize "cover"
+                  BackgroundRepeat "no-repeat"
+                  BackgroundPosition "center center" ] ]
+    [ div [ Class "container py-r" ] [
+          div [ Class "columns" ]
+            [ div [ Class "column is-3" ]
+                [ playerActiveCreature playerBoard.ActiveCreature ]
+              playerBench playerBoard.Bench 4
+
+               ] ] ]
+```
+
+Additionally, at this stage I noticed that the playmat background on the creatures were missing a `'` around the url so I added that.
