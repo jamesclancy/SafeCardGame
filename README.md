@@ -718,7 +718,7 @@ let playerStats  (player: Player) (playerBoard: PlayerBoard) =
 
 ```
 
-I can also pull out the step information into a `currentStepInformation` function. I can then utilize if it is the player's turn and the GameState.CurrentStep to select the classes for the steps like:
+I can also pull out the step information into a `currentStepInformation` function. I can then utilize it if it is the player's turn and the GameState.CurrentStep to select the classes for the steps like:
 
 ```
 let yourCurrentStepClasses (player: Player) (gameState : GameState) (gamesStep: GameStep) =
@@ -960,7 +960,7 @@ Apparently, a description is also needed on the card types.
 
 Also, a description is needed on the `GameStateSpecialEffect`.
 
-Also, a to string override is needed for the `ImageUrlString` type. I set this by overriding all the ToString methods on the `NonEmptyString`, `UrlString`, and `ImageUrlString`.
+Also, a `ToString` override is needed for the `ImageUrlString` type. I set this by overriding all the ToString methods on the `NonEmptyString`, `UrlString`, and `ImageUrlString`.
 
 i.e.
 
@@ -989,7 +989,7 @@ This is the last commit in the branch `step-5-wire-up-layout-to-gamestate`
 
 Now I am going to continue to wire up the layout to the GameState. Previously, I was able to generate some cards and decks. Doing that I realize I can pull out a function to map Resources to a symbol.
 
-In order to fasiliate this mapping I created a function:
+In order to facilitate this mapping I created a function:
 
 ```
 let getSymbolForResource resource =
@@ -1012,7 +1012,7 @@ let textDescriptionForResourcePool (resourcePool : ResourcePool) =
     |> String.concat ";"
 ```
 
-Using this funciton I can break out a renderAttackRow function. I doing this I had to add a Name property to the `Attack` type. After adding the `Name` I can craete a method like:
+Using this function I can break out a renderAttackRow function. To do this I had to add a Name property to the `Attack` type. After adding the `Name` I can create a method like:
 
 ```
 
@@ -1041,7 +1041,7 @@ let renderAttackRow (attack: Attack) =
                 ] ]
 ```
 
-and refrence it like
+and reference it like
 
 ```
 let renderCharacterCard (card: CharacterCard) =
@@ -1081,11 +1081,11 @@ let renderCharacterCard (card: CharacterCard) =
                             [ str "Discard" ] ] ] ]
 ```
 
-Now I have to plug in the information into the player and enemy creature hopfully reusing much of the previously created functions.
+Now I have to plug in the information into the player and enemy creature hopefully reusing much of the previously created functions.
 
 First, I can plug in the playmat backgrounds.
 
-Then, I see I can use a mapping function for the `SpecialCondition`s to status symbols similar to what was done for the Resource symbols as well a function which takes an optional list of these condtions and appends them together. *These mapping do rely on emojis, this is not a great idea but I am sticking with it for now*.
+Then, I see I can use a mapping function for the `SpecialCondition`s to status symbols similar to what was done for the Resource symbols as well a function which takes an optional list of these conditions and appends them together. *These mappings do rely on emojis, this is not a great idea but I am sticking with it for now*.
 
 Like:
 ```
@@ -1243,9 +1243,9 @@ let inPlayCreatureSeqGenerator (numberOfCards : int) =
                 ) (Ok List.empty)
 ```
 
-Next I need to modify the player creatures to also reference the state.
+Next, I need to modify the player creatures to also reference the state.
 
-Do do this I created three functions:
+To do this I created three functions:
 
 ```
 
@@ -1356,7 +1356,7 @@ let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
                ] ] ]
 ```
 
-This compiles and displays now. Here note that the playerBench takes an arguement for the number of column to display. I wasn't sure if it should be 3 or 4 cards per column so I made it a variable.
+This compiles and displays now. Here note that the playerBench takes an argument for the number of columns to display. I wasn't sure if it should be 3 or 4 cards per column so I made it a variable.
 
 The playerCreatures can then be changed to
 
@@ -1378,4 +1378,6 @@ let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
                ] ] ]
 ```
 
-Additionally, at this stage I noticed that the playmat background on the creatures were missing a `'` around the url so I added that.
+Additionally, at this stage, I noticed that the playmat background on the creatures was missing a `'` around the url so I added that.
+
+Now our layout is largely wired up to the GameState. Next, we will need to define some events which modify the GameState and attach those events to the UI.
