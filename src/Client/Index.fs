@@ -81,13 +81,50 @@ let testCardSeqGenerator (numberOfCards : int) =
                     | _,_ -> "Eating Errors lol" |> Error
                 ) (Ok List.empty)
 
+let inPlayCreatureGenerator inPlayCreatureIdStr cardInstanceIdStr cardIdStr cardImageUrlStr =
+        let inPlayCreatureId = NonEmptyString.build inPlayCreatureIdStr |> Result.map InPlayCreatureId
+        let card = testCardGenerator cardInstanceIdStr cardIdStr cardImageUrlStr
+
+        match inPlayCreatureId, card with
+        | Ok id, Ok c ->
+            Ok {
+                InPlayCharacterId=  id
+                Card = c.Card
+                CurrentDamage=  0
+                SpecialEffect=  None
+                AttachedEnergy = [ Resource.Grass, 4;
+                                     Resource.Colorless, 1 ] |> Seq.ofList |> ResourcePool
+                SpentEnergy = [ Resource.Grass, 4;
+                                     Resource.Colorless, 1 ] |> Seq.ofList |> ResourcePool
+            }
+        | _, _ -> "Unable to create in play creature." |> Error
+
+
+let inPlayCreatureSeqGenerator (numberOfCards : int) =
+    seq { 0 .. (numberOfCards - 1) }
+    |> Seq.map (fun x -> inPlayCreatureGenerator
+                            (sprintf "ExcitingCharacter%i" x)
+                            (sprintf "ExcitingCharacter%i" x)
+                            (sprintf "Exciting Character #%i" x)
+                            (sprintf "https://picsum.photos/320/200?%i" x))
+    |> Seq.map (fun x ->
+                        match x with
+                        | Ok s -> [ s ] |> Ok
+                        | Error e -> e |> Error)
+    |> Seq.fold (fun x y ->
+                    match x, y with
+                    | Ok accum, Ok curr -> curr @ accum |> Ok
+                    | _,_ -> "Eating Errors lol" |> Error
+                ) (Ok List.empty)
 
 let playerBoard (player : Player) =
     let deckTemp =  testCardSeqGenerator 35
     let handTemp = testCardSeqGenerator 3
 
-    match deckTemp, handTemp with
-    | Ok deck, Ok hand ->
+    let activeCreature = inPlayCreatureGenerator "InPlayCharacter" "InPlayCharacter" "InPlayCharacter" (sprintf "https://picsum.photos/320/200?%s" (System.Guid.NewGuid().ToString()))
+    let benchCreatures = inPlayCreatureSeqGenerator 4
+    match deckTemp, handTemp, activeCreature, benchCreatures with
+    | Ok deck, Ok hand, Ok cre, Ok ben ->
         Ok  {
                 PlayerId=  player.PlayerId
                 Deck= {
@@ -98,8 +135,8 @@ let playerBoard (player : Player) =
                     {
                         Cards = hand
                     }
-                ActiveCreature= None
-                Bench=  None
+                ActiveCreature= Some cre
+                Bench=  Some ben
                 DiscardPile= {
                     TopCardsExposed = 0
                     Cards = List.empty
@@ -107,7 +144,7 @@ let playerBoard (player : Player) =
                 TotalResourcePool= ResourcePool Seq.empty
                 AvailableResourcePool =  ResourcePool Seq.empty
             }
-    | _,_ -> "Error creating deck or hand" |> Error
+    | _,_, _,_ -> "Error creating deck or hand" |> Error
 
 
 let init =

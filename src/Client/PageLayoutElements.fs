@@ -5,6 +5,8 @@ open Fable.React
 open Fable.React.Props
 open Fulma
 open Shared.Domain
+open GeneralUIHelpers
+
 
 let topNavigation =
   nav [ Class "navbar is-dark" ]
@@ -57,7 +59,6 @@ let topNavigation =
                               Href "https://github.com/jamesclancy/SafeCardGame" ]
                             [ str "Source" ] ] ] ] ] ] ]
 
-
 let playerStats  (player: Player) (playerBoard: PlayerBoard) =
     [             div [ Class "navbar-item" ]
                     [ a [ Class "button is-primary"
@@ -76,7 +77,6 @@ let playerStats  (player: Player) (playerBoard: PlayerBoard) =
                           Href "#" ]
                         [ str (sprintf "🗑️ %i" playerBoard.DiscardPile.Cards.Length)] ] ]
 
-
 let enemyStats (player: Player) (playerBoard: PlayerBoard) =
   nav [ Class "navbar is-fullwidth is-danger" ]
     [ div [ Class "container" ]
@@ -88,57 +88,55 @@ let enemyStats (player: Player) (playerBoard: PlayerBoard) =
             [ div [ Class "navbar-start" ]
                 [ yield! playerStats player playerBoard ] ] ] ]
 
-let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
-  section [
-          Class "section"
-          Style [ Background "url('https://picsum.photos/id/10/2500/1667?blur=5')"
-                  BackgroundSize "cover"
-                  BackgroundRepeat "no-repeat"
-                  BackgroundPosition "center center" ] ]
-    [ div [ Class "container py-r" ]
-        [ div [ Class "columns" ]
-            [ div [ Class "column is-1" ]
-                [ ]
-              div [ Class "column is-3" ]
-                [ a [ Href "#" ]
+let renderEnemyActiveCreature (inPlayCreature : Option<InPlayCreature>) =
+  match (Option.map (fun x -> (x, x.Card)) inPlayCreature) with
+  | None -> strong [] [ str "No creature in active play" ]
+  | Some (creature, EffectCard card) ->  strong [] [ str "Active creature is not a character?" ]
+  | Some (creature, ResourceCard card) -> strong [] [ str "Active creature is not a character?" ]
+  | Some (creature, CharacterCard card) ->
+        a [ Href "#" ]
                     [ div [ Class "card" ]
                         [ header [ Class "card-header" ]
                             [ p [ Class "card-header-title" ]
-                                [ str "✫ Card Name" ]
+                                [ str (sprintf "✫ %s" card.Name) ]
                               p [ Class "card-header-icon" ]
-                                [ str "50/100 Health"
-                                  str "☠️
-                                    💤" ] ]
+                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - creature.CurrentDamage) card.Creature.Health)
+                                  str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
                           div [ Class "card-image" ]
                             [ figure [ Class "image is-4by3" ]
-                                [ img [ Src "https://picsum.photos/600/300?1"
-                                        Alt "Placeholder image"
+                                [ img [ Src (card.ImageUrl.ToString())
+                                        Alt card.Name
                                         Class "is-fullwidth" ] ] ]
                           div [ Class "card-content" ]
                             [ div [ Class "content" ]
                                 [ p [ Class "is-italic" ]
-                                    [ str "This is a sweet description." ]
+                                    [ str card.Description ]
                                   h5 [ Class "IsTitle is5" ]
                                     [ str "Attacks" ]
                                   table [ ]
-                                    [ tr [ ]
-                                        [ td [ ]
-                                            [ str "🍂 x1" ]
-                                          td [ ]
-                                            [ str "Leaf Cut" ]
-                                          td [ ]
-                                            [ str "10" ] ]
-                                      tr [ ]
-                                        [ td [ ]
-                                            [ str "🍂 x2" ]
-                                          td [ ]
-                                            [ str "Vine Whip" ]
-                                          td [ ]
-                                            [ str "30" ] ] ] ] ] ] ] ]
-              div [ Class "column is-7" ]
-                [ div [ Class "columns is-mobile is-multiline" ]
-                    [ h2 [ Class "title is-4" ]
-                        [ str "Bench" ]
+                                    [
+                                        yield! seq {
+                                            for a in card.Creature.Attach do
+                                                (renderAttackRow a)
+                                        } ] ] ] ] ]
+
+let renderEnemyBenchRow inPlayCreature =
+    match inPlayCreature.Card with
+    | EffectCard ec -> strong [] [ str "Bench creature is not a character code" ]
+    | ResourceCard rc -> strong [] [ str "Bench creature is not a character code" ]
+    | CharacterCard card ->
+        tr [ ]
+                            [ td [ ]
+                                [ str card.Name ]
+                              td [ ]
+                                [ str (textDescriptionForListOfSpecialConditions inPlayCreature.SpecialEffect) ]
+                              td [ ]
+                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - inPlayCreature.CurrentDamage) card.Creature.Health)  ] ]
+
+let renderEnemyBench bench  =
+    match bench with
+    | None -> strong [] [ str "No creatures on bench" ]
+    | Some  l->
                       table [ Class "table is-fullwidth" ]
                         [ tr [ ]
                             [ th [ ]
@@ -147,28 +145,31 @@ let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
                                 [ str "Status" ]
                               th [ ]
                                 [ str "Health" ] ]
-                          tr [ ]
-                            [ td [ ]
-                                [ str "Creature A" ]
-                              td [ ]
-                                [ ]
-                              td [ ]
-                                [ str "90/100" ] ]
-                          tr [ ]
-                            [ td [ ]
-                                [ str "Creature A" ]
-                              td [ ]
-                                [ ]
-                              td [ ]
-                                [ str "90/100" ] ]
-                          tr [ ]
-                            [ td [ ]
-                                [ str "Creature A" ]
-                              td [ ]
-                                [ ]
-                              td [ ]
-                                [ str "90/100" ] ] ] ] ] ] ] ]
+                          yield! seq {
+                                for b in l do
+                                renderEnemyBenchRow b
+                          }
+                        ]
 
+let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
+  section [
+          Class "section"
+          Style [ Background (sprintf "url('%s')" (player.PlaymatUrl.ToString()))
+                  BackgroundSize "cover"
+                  BackgroundRepeat "no-repeat"
+                  BackgroundPosition "center center" ] ]
+    [ div [ Class "container py-r" ]
+        [ div [ Class "columns" ]
+            [ div [ Class "column is-1" ]
+                [ ]
+              div [ Class "column is-3" ]
+                [ renderEnemyActiveCreature playerBoard.ActiveCreature ]
+              div [ Class "column is-7" ]
+                [ div [ Class "columns is-mobile is-multiline" ]
+                    [ h2 [ Class "title is-4" ]
+                        [ str "Bench" ]
+                      renderEnemyBench playerBoard.Bench
+                    ] ] ] ] ]
 
 let yourCurrentStepClasses (player: Player) (gameState : GameState) (gamesStep: GameStep) =
     if not (player.PlayerId = gameState.CurrentPlayer) then "button is-primary"
@@ -223,277 +224,111 @@ let playerControlCenter  (player: Player) (playerBoard: PlayerBoard) (gameState 
                                 [ span [ ]
                                     [ str "Skip Step" ] ] ] ] ] ] ] ] ]
 
+let playerActiveCreature (inPlayCreature : Option<InPlayCreature>) =
+  match (Option.map (fun x -> (x, x.Card)) inPlayCreature) with
+  | None -> strong [] [ str "No creature in active play" ]
+  | Some (creature, EffectCard card) ->  strong [] [ str "Active creature is not a character?" ]
+  | Some (creature, ResourceCard card) -> strong [] [ str "Active creature is not a character?" ]
+  | Some (creature, CharacterCard card) ->
+        a [ Href "#" ]
+                    [ div [ Class "card" ]
+                        [ header [ Class "card-header" ]
+                            [ p [ Class "card-header-title" ]
+                                [ str (sprintf "✫ %s" card.Name) ]
+                              p [ Class "card-header-icon" ]
+                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - creature.CurrentDamage) card.Creature.Health)
+                                  str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
+                          div [ Class "card-image" ]
+                            [ figure [ Class "image is-4by3" ]
+                                [ img [ Src (card.ImageUrl.ToString())
+                                        Alt card.Name
+                                        Class "is-fullwidth" ] ] ]
+                          div [ Class "card-content" ]
+                            [ div [ Class "content" ]
+                                [ p [ Class "is-italic" ]
+                                    [ str card.Description ]
+                                  h5 [ Class "IsTitle is5" ]
+                                    [ str "Attacks" ]
+                                  table [ ]
+                                    [
+                                        yield! seq {
+                                            for a in card.Creature.Attach do
+                                                (renderAttackRow a)
+                                        } ] ] ]
+                          footer [ Class "card-footer" ]
+                            [ a [ Href "#"
+                                  Class "card-footer-item" ]
+                                [ str "Tap Out" ] ] ] ]
+
+let playerBenchCreature (inPlayCreature : InPlayCreature)=
+  match (inPlayCreature, inPlayCreature.Card) with
+  | (creature, EffectCard card) ->  strong [] [ str "Active creature is not a character?" ]
+  | (creature, ResourceCard card) -> strong [] [ str "Active creature is not a character?" ]
+  | (creature, CharacterCard card) ->
+         div [ Class "column is-4-mobile is-12-tablet" ]
+                    [ div [ Class "card" ]
+                        [ header [ Class "card-header" ]
+                            [ p [ Class "card-header-title" ]
+                                [ str card.Name ]
+                              p [ Class "card-header-icon" ]
+                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - creature.CurrentDamage) card.Creature.Health)
+                                  str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
+                          div [ Class "card-image" ]
+                            [ figure [ Class "image is-4by3" ]
+                                [ img [ Src (card.ImageUrl.ToString())
+                                        Alt card.Name
+                                        Class "is-fullwidth" ] ] ]
+                          div [ Class "card-content" ]
+                            [ div [ Class "content" ]
+                                [ p [ Class "is-italic" ]
+                                    [ str card.Description ]
+                                  h5 [ Class "IsTitle is5" ]
+                                    [ str "Attacks" ]
+                                  table [ ]
+                                    [
+                                        yield! seq {
+                                            for a in card.Creature.Attach do
+                                                (renderAttackRow a)
+                                        } ] ] ] ] ]
+
+let playerBench (bench : Option<InPlayCreature list>) columnsInBench =
+    match bench with
+    | None -> strong [] [ str "No creatures on bench."]
+    | Some l ->
+      div [ Class "column is-9"] [
+        div [ Class "container"] [
+          h3 [Class "title is-3"] [str "Bench"]
+          yield! seq {
+            let numberOfRows = (l.Length / columnsInBench)
+            for row in {0 .. numberOfRows }  do
+                let innerl = Seq.truncate columnsInBench (Seq.skip (row * columnsInBench) l)
+
+                div [ Class "columns is-mobile is-multiline" ]
+                    [
+                       yield! seq {
+                           for creature in innerl do
+                            div [ Class (sprintf "column is-%i" (12/columnsInBench)) ] [
+                                playerBenchCreature creature
+                            ]
+                       }
+                    ]
+        } ] ]
+
+
 let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
   section [
           Class "section"
-          Style [ Background "url('https://picsum.photos/id/1000/2500/1667?blur=5')"
+          Style [ Background (sprintf "url('%s')" (player.PlaymatUrl.ToString()))
                   BackgroundSize "cover"
                   BackgroundRepeat "no-repeat"
                   BackgroundPosition "center center" ] ]
     [ div [ Class "container py-r" ] [
           div [ Class "columns" ]
             [ div [ Class "column is-3" ]
-                [ a [ Href "#" ]
-                    [ div [ Class "card" ]
-                        [ header [ Class "card-header" ]
-                            [ p [ Class "card-header-title" ]
-                                [ str "✫ Card Name" ]
-                              p [ Class "card-header-icon" ]
-                                [ str "50/100 Health"
-                                  str "☠️
-                                            💤" ] ]
-                          div [ Class "card-image" ]
-                            [ figure [ Class "image is-4by3" ]
-                                [ img [ Src "https://picsum.photos/600/300?1"
-                                        Alt "Placeholder image"
-                                        Class "is-fullwidth" ] ] ]
-                          div [ Class "card-content" ]
-                            [ div [ Class "content" ]
-                                [ p [ Class "is-italic" ]
-                                    [ str "This is a sweet description." ]
-                                  h5 [ Class "IsTitle is5" ]
-                                    [ str "Attacks" ]
-                                  table [ ]
-                                    [ tr [ ]
-                                        [ td [ ]
-                                            [ str "🍂 x1" ]
-                                          td [ ]
-                                            [ str "Leaf Cut" ]
-                                          td [ ]
-                                            [ str "10" ]
-                                          td [ ]
-                                            [ button [ ]
-                                                [ str "Use" ] ] ]
-                                      tr [ ]
-                                        [ td [ ]
-                                            [ str "🍂 x2" ]
-                                          td [ ]
-                                            [ str "Vine Whip" ]
-                                          td [ ]
-                                            [ str "30" ]
-                                          td [ ]
-                                            [ ] ] ] ] ]
-                          footer [ Class "card-footer" ]
-                            [ a [ Href "#"
-                                  Class "card-footer-item" ]
-                                [ str "Tap Out" ] ] ] ] ]
-              div [ Class "column is-3" ]
-                [ div [ Class "columns is-mobile is-multiline" ]
-                    [ div [ Class "column is-4-mobile is-12-tablet" ]
-                        [ div [ Class "card" ]
-                            [ header [ Class "card-header" ]
-                                [ p [ Class "card-header-title" ]
-                                    [ str "Card Name" ]
-                                  p [ Class "card-header-icon" ]
-                                    [ str "50/100 Health"
-                                      str "☠️
-                                                💤" ] ]
-                              div [ Class "card-image" ]
-                                [ figure [ Class "image is-4by3" ]
-                                    [ img [ Src "https://picsum.photos/320/200?2"
-                                            Alt "Placeholder image"
-                                            Class "is-fullwidth" ] ] ]
-                              div [ Class "card-content" ]
-                                [ div [ Class "content" ]
-                                    [ p [ Class "is-italic" ]
-                                        [ str "This is a sweet description." ]
-                                      h5 [ Class "IsTitle is5" ]
-                                        [ str "Attacks" ]
-                                      table [ ]
-                                        [ tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x1" ]
-                                              td [ ]
-                                                [ str "Leaf Cut" ]
-                                              td [ ]
-                                                [ str "10" ] ]
-                                          tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x2" ]
-                                              td [ ]
-                                                [ str "Vine Whip" ]
-                                              td [ ]
-                                                [ str "30" ] ] ] ] ] ] ]
-                      div [ Class "column is-4-mobile is-12-tablet" ]
-                        [ div [ Class "card" ]
-                            [ header [ Class "card-header" ]
-                                [ p [ Class "card-header-title" ]
-                                    [ str "Card Name" ]
-                                  p [ Class "card-header-icon" ]
-                                    [ str "50/100 Health"
-                                      str "☠️
-                                                💤" ] ]
-                              div [ Class "card-image" ]
-                                [ figure [ Class "image is-4by3" ]
-                                    [ img [ Src "https://picsum.photos/320/200?2"
-                                            Alt "Placeholder image"
-                                            Class "is-fullwidth" ] ] ]
-                              div [ Class "card-content" ]
-                                [ div [ Class "content" ]
-                                    [ p [ Class "is-italic" ]
-                                        [ str "This is a sweet description." ]
-                                      h5 [ Class "IsTitle is5" ]
-                                        [ str "Attacks" ]
-                                      table [ ]
-                                        [ tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x1" ]
-                                              td [ ]
-                                                [ str "Leaf Cut" ]
-                                              td [ ]
-                                                [ str "10" ] ]
-                                          tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x2" ]
-                                              td [ ]
-                                                [ str "Vine Whip" ]
-                                              td [ ]
-                                                [ str "30" ] ] ] ] ] ] ] ] ]
-              div [ Class "column is-3" ]
-                [ div [ Class "columns is-mobile is-multiline" ]
-                    [ div [ Class "column is-4-mobile is-12-tablet" ]
-                        [ div [ Class "card" ]
-                            [ header [ Class "card-header" ]
-                                [ p [ Class "card-header-title" ]
-                                    [ str "Card Name" ]
-                                  p [ Class "card-header-icon" ]
-                                    [ str "50/100 Health"
-                                      str "☠️
-                                                💤" ] ]
-                              div [ Class "card-image" ]
-                                [ figure [ Class "image is-4by3" ]
-                                    [ img [ Src "https://picsum.photos/320/200?2"
-                                            Alt "Placeholder image"
-                                            Class "is-fullwidth" ] ] ]
-                              div [ Class "card-content" ]
-                                [ div [ Class "content" ]
-                                    [ p [ Class "is-italic" ]
-                                        [ str "This is a sweet description." ]
-                                      h5 [ Class "IsTitle is5" ]
-                                        [ str "Attacks" ]
-                                      table [ ]
-                                        [ tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x1" ]
-                                              td [ ]
-                                                [ str "Leaf Cut" ]
-                                              td [ ]
-                                                [ str "10" ] ]
-                                          tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x2" ]
-                                              td [ ]
-                                                [ str "Vine Whip" ]
-                                              td [ ]
-                                                [ str "30" ] ] ] ] ] ] ]
-                      div [ Class "column is-4-mobile is-12-tablet" ]
-                        [ div [ Class "card" ]
-                            [ header [ Class "card-header" ]
-                                [ p [ Class "card-header-title" ]
-                                    [ str "Card Name" ]
-                                  p [ Class "card-header-icon" ]
-                                    [ str "50/100 Health"
-                                      str "☠️
-                                                💤" ] ]
-                              div [ Class "card-image" ]
-                                [ figure [ Class "image is-4by3" ]
-                                    [ img [ Src "https://picsum.photos/320/200?2"
-                                            Alt "Placeholder image"
-                                            Class "is-fullwidth" ] ] ]
-                              div [ Class "card-content" ]
-                                [ div [ Class "content" ]
-                                    [ p [ Class "is-italic" ]
-                                        [ str "This is a sweet description." ]
-                                      h5 [ Class "IsTitle is5" ]
-                                        [ str "Attacks" ]
-                                      table [ ]
-                                        [ tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x1" ]
-                                              td [ ]
-                                                [ str "Leaf Cut" ]
-                                              td [ ]
-                                                [ str "10" ] ]
-                                          tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x2" ]
-                                              td [ ]
-                                                [ str "Vine Whip" ]
-                                              td [ ]
-                                                [ str "30" ] ] ] ] ] ] ] ] ]
-              div [ Class "column is-3" ]
-                [ div [ Class "columns is-mobile is-multiline" ]
-                    [ div [ Class "column is-4-mobile is-12-tablet" ]
-                        [ div [ Class "card" ]
-                            [ header [ Class "card-header" ]
-                                [ p [ Class "card-header-title" ]
-                                    [ str "Card Name" ]
-                                  p [ Class "card-header-icon" ]
-                                    [ str "50/100 Health"
-                                      str "☠️
-                                                💤" ] ]
-                              div [ Class "card-image" ]
-                                [ figure [ Class "image is-4by3" ]
-                                    [ img [ Src "https://picsum.photos/320/200?2"
-                                            Alt "Placeholder image"
-                                            Class "is-fullwidth" ] ] ]
-                              div [ Class "card-content" ]
-                                [ div [ Class "content" ]
-                                    [ p [ Class "is-italic" ]
-                                        [ str "This is a sweet description." ]
-                                      h5 [ Class "IsTitle is5" ]
-                                        [ str "Attacks" ]
-                                      table [ ]
-                                        [ tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x1" ]
-                                              td [ ]
-                                                [ str "Leaf Cut" ]
-                                              td [ ]
-                                                [ str "10" ] ]
-                                          tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x2" ]
-                                              td [ ]
-                                                [ str "Vine Whip" ]
-                                              td [ ]
-                                                [ str "30" ] ] ] ] ] ] ]
-                      div [ Class "column is-4-mobile is-12-tablet" ]
-                        [ div [ Class "card" ]
-                            [ header [ Class "card-header" ]
-                                [ p [ Class "card-header-title" ]
-                                    [ str "Card Name" ]
-                                  p [ Class "card-header-icon" ]
-                                    [ str "50/100 Health"
-                                      str "☠️
-                                                💤" ] ]
-                              div [ Class "card-image" ]
-                                [ figure [ Class "image is-4by3" ]
-                                    [ img [ Src "https://picsum.photos/320/200?2"
-                                            Alt "Placeholder image"
-                                            Class "is-fullwidth" ] ] ]
-                              div [ Class "card-content" ]
-                                [ div [ Class "content" ]
-                                    [ p [ Class "is-italic" ]
-                                        [ str "This is a sweet description." ]
-                                      h5 [ Class "IsTitle is5" ]
-                                        [ str "Attacks" ]
-                                      table [ ]
-                                        [ tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x1" ]
-                                              td [ ]
-                                                [ str "Leaf Cut" ]
-                                              td [ ]
-                                                [ str "10" ] ]
-                                          tr [ ]
-                                            [ td [ ]
-                                                [ str "🍂 x2" ]
-                                              td [ ]
-                                                [ str "Vine Whip" ]
-                                              td [ ]
-                                                [ str "30" ] ] ] ] ] ] ] ] ] ] ] ]
+                [ playerActiveCreature playerBoard.ActiveCreature ]
+              playerBench playerBoard.Bench 4
 
+               ] ] ]
 
 let displayCardSpecialEffectDetailIfPresent title (value : Option<GameStateSpecialEffect>)=
     match value with
@@ -511,11 +346,11 @@ let renderCharacterCard (card: CharacterCard) =
                         [ p [ Class "card-header-title" ]
                             [ str card.Name ]
                           p [ Class "card-header-icon" ]
-                            [ str "🍂 x4" ] ]
+                            [ str (textDescriptionForResourcePool card.ResourceCost) ] ]
                       div [ Class "card-image" ]
                         [ figure [ Class "image is-4by3" ]
                             [ img [ Src (card.ImageUrl.ToString())
-                                    Alt "Placeholder image"
+                                    Alt card.Name
                                     Class "is-fullwidth" ] ] ]
                       div [ Class "card-content" ]
                         [ div [ Class "content" ]
@@ -526,20 +361,12 @@ let renderCharacterCard (card: CharacterCard) =
                               h5 [ Class "IsTitle is5" ]
                                 [ str "Attacks" ]
                               table [ ]
-                                [ tr [ ]
-                                    [ td [ ]
-                                        [ str "🍂 x1" ]
-                                      td [ ]
-                                        [ str "Leaf Cut" ]
-                                      td [ ]
-                                        [ str "10" ] ]
-                                  tr [ ]
-                                    [ td [ ]
-                                        [ str "🍂 x2" ]
-                                      td [ ]
-                                        [ str "Vine Whip" ]
-                                      td [ ]
-                                        [ str "30" ] ] ] ] ]
+                                [
+                                  yield! seq {
+                                    for a in card.Creature.Attach do
+                                      (renderAttackRow a)
+                                  }
+                                ] ] ]
                       footer [ Class "card-footer" ]
                         [ a [ Href "#"
                               Class "card-footer-item" ]
@@ -553,7 +380,6 @@ let renderCardForHand (card: Card) =
     | CharacterCard c -> renderCharacterCard c
     | _ ->
         strong [] [ str "IDK" ]
-
 
 let renderCardInstanceForHand (card: CardInstance) =
     renderCardForHand card.Card
@@ -604,32 +430,6 @@ let footerBand =
               div [ Class "column has-text-centered has-text-right-tablet" ]
                 [ p [ Class "subtitle is-6" ]
                     [ str "© ??" ] ] ] ] ]
-
-let opponentPlayer (model : GameState) =
-    match model.Players.TryGetValue model.OpponentPlayer with
-    | true, p -> p |> Ok
-    | false, _ -> "Unable to locate oppponent in player list" |> Error
-
-
-let opponentPlayerBoard (model : GameState) =
-    match model.Boards.TryGetValue model.OpponentPlayer with
-    | true, p -> p |> Ok
-    | false, _ -> "Unable to locate oppponent in board list" |> Error
-
-let currentPlayer (model : GameState) =
-    match model.Players.TryGetValue model.CurrentPlayer with
-    | true, p -> p |> Ok
-    | false, _ -> "Unable to locate current player in player list" |> Error
-
-
-let currentPlayerBoard (model : GameState) =
-    match model.Boards.TryGetValue model.CurrentPlayer with
-    | true, p -> p |> Ok
-    | false, _ -> "Unable to locate current player in board list" |> Error
-
-let extractNeededModelsFromState (model: GameState) =
-    opponentPlayer model, opponentPlayerBoard model, currentPlayer model, currentPlayerBoard model
-
 
 let mainLayout  model dispatch =
   match extractNeededModelsFromState model with
