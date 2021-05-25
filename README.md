@@ -1381,3 +1381,11 @@ let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
 Additionally, at this stage, I noticed that the playmat background on the creatures was missing a `'` around the url so I added that.
 
 Now our layout is largely wired up to the GameState. Next, we will need to define some events which modify the GameState and attach those events to the UI.
+
+This is the final commit in the branch `step-6-wire-up-layout-to-gamestate-part-2`
+
+### Defining Events To Change the GameState
+
+As players play the game they can perform a number of actions which trigger events that modify the GameState.
+
+*Note from a technical standpoint:* The GameState is actaully immutable and never changes but rather a new GameState is generated from an acton and the previous state. This new state replaces the past state.
