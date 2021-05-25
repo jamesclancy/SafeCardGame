@@ -1385,7 +1385,63 @@ Now our layout is largely wired up to the GameState. Next, we will need to defin
 This is the final commit in the branch `step-6-wire-up-layout-to-gamestate-part-2`
 
 ### Defining Events To Change the GameState
+---
 
 As players play the game they can perform a number of actions which trigger events that modify the GameState.
 
 *Note from a technical standpoint:* The GameState is actaully immutable and never changes but rather a new GameState is generated from an acton and the previous state. This new state replaces the past state.
+
+
+Initially, I am going to start just writing out some potenital events which could happen during the game and the associated event data they would carry.
+
+* StartGame - Inititalizes a new game (Creates a new GameState)
+  * A unique GameID
+  * Pair of Players with associated decks
+  * PlayerID of Player to start game
+* DrawCard - Moves the top card from the deck to the hand on the playboard referenced by the PlayerId
+  * GameId
+  * PlayerId
+* DiscardCard - Move card with CardInstanceId from the playerboard's hand to discard pile
+  * GameId
+  * PlayerId
+  * CardInstanceID
+* PlayCard -
+    If resources are available on the player's board:
+        remove the card from the players hand
+        - if a resource card add to the total resource pool
+        - if an effect card trigger the effect
+        - if a character card create an inplay creature and trigger the   enter event. If no active create exists place the in play creature in the active potition otherwise place on the bench.
+    If the resources are not available add an error message to the gamestate
+  * GameId
+  * PlayerId
+  * CardInstanceID
+* EndPlayStep - Move the gamestate to the attack state
+  * GameId
+  * PlayerId
+* Attack -
+    If the resources are available on the player's board:
+        if the opponent has an inplay creature deal the damage from the attack to that creature. If the creature has <= 0 heath the creature dies
+        if the opponent has no inplay creature deal the damage to the player
+    if the resources are not available on the player's board display a message
+  * GameId
+  * PlayerId
+  * InPlayCreatureId
+  * Attack
+* SkipAttack - Move the gamestate to reconcile
+  * GameId
+  * PlayerId
+* EndTurn - Mode the gamestate to teh other player's draw state
+  * GameId
+  * PlayerId
+* GameWon - Move the gamestate to the game over state
+  * PlayerId of Winner
+  * Winning Reason (string)
+
+There will have to be additional events for things like tapping out/retreating active creatures but I think those would best be added after everything else is set up/works.
+
+Going through this process I have identified a few inital things that need to be added.
+
+    * need a message string on the GameState
+    * need a CurrentState for GameOver
+    * need an optional winner on the GameState
+    * need a game id on the GameState
