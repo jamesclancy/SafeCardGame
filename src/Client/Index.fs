@@ -6,10 +6,8 @@ open Shared
 open Shared.Domain
 open Shared.Domain
 open Shared.Domain
+open Events
 
-
-type Msg =
-    | GameStarted
 
 let todosApi =
     Remoting.createApi()
@@ -149,16 +147,18 @@ let playerBoard (player : Player) =
 
 let init =
     let player1 = createPlayer "Player1" "Player1" 10 "https://picsum.photos/id/1000/2500/1667?blur=5"
-    let player2 = createPlayer "Player2" "Player2" 10 "https://picsum.photos/id/10/2500/1667?blur=5'"
+    let player2 = createPlayer "Player2" "Player2" 10 "https://picsum.photos/id/10/2500/1667?blur=5"
+    let gameId =  NonEmptyString.build "GameIDHere" |> Result.map GameId
 
-    match player1, player2 with
-    | Ok p1, Ok p2 ->
+    match player1, player2, gameId with
+    | Ok p1, Ok p2, Ok g ->
         let playerBoard1 = playerBoard p1
         let playerBoard2 = playerBoard p2
         match playerBoard1, playerBoard2 with
         | Ok pb1, Ok pb2 ->
-          let model =
+          let model : GameState =
             {
+                GameId = g
                 Players =  [
                             p1.PlayerId, p1;
                             p2.PlayerId, p2
@@ -167,8 +167,8 @@ let init =
                             pb1.PlayerId, pb1;
                             pb2.PlayerId, pb2
                            ] |> Map.ofList
-                CurrentTurn = Some p1.PlayerId
-                CurrentStep=  Attack
+                NotificationMessages = None
+                CurrentStep =  (p1.PlayerId |> Attack)
                 TurnNumber = 1
                 CurrentPlayer = p1.PlayerId
                 OpponentPlayer = p2.PlayerId

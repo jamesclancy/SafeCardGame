@@ -51,6 +51,7 @@ module Domain =
     type CardInstanceId = CardInstanceId of NonEmptyString
     type CardId = CardId of NonEmptyString
     type InPlayCreatureId = InPlayCreatureId of NonEmptyString
+    type GameId = GameId of NonEmptyString
 
     type Player =
         {
@@ -157,15 +158,27 @@ module Domain =
             AttachedEnergy: ResourcePool
             SpentEnergy: ResourcePool
         }
+    and GameOverStep =
+        {
+            WinnerId: Option<PlayerId>
+            Message: string
+        }
     and GameStep =
-        NotCurrentlyPlaying | Draw | Play | Attack | Reconcile
+        NotCurrentlyPlaying
+        | Draw of PlayerId
+        | Play of PlayerId
+        | Attack of PlayerId
+        | Reconcile of PlayerId
+        | GameOver of GameOverStep
+    and Notification = string
     and GameState =
         {
+            GameId: GameId
+            NotificationMessages: Option<Notification list>
             CurrentPlayer: PlayerId
             OpponentPlayer: PlayerId
             Players: Map<PlayerId, Player>
             Boards: Map<PlayerId, PlayerBoard>
-            CurrentTurn: Option<PlayerId>
             CurrentStep:GameStep
             TurnNumber: int
         }
