@@ -1548,3 +1548,4 @@ let currentStepInformation (player: Player) (gameState : GameState) =
 
 At this point everything builds and I am checking it in with a commit message of `Step 7 Updates to GameState`.
 
+In the Client/Index.fs I can now modify the Msg type to be a descriminate union of all the above listed types. First though I am moving the Msg type into its own module/file Events/Events.fs.

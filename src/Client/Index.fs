@@ -6,10 +6,8 @@ open Shared
 open Shared.Domain
 open Shared.Domain
 open Shared.Domain
+open Events
 
-
-type Msg =
-    | GameStarted
 
 let todosApi =
     Remoting.createApi()
