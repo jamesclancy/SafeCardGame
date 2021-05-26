@@ -1378,7 +1378,7 @@ let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
                ] ] ]
 ```
 
-Additionally, at this stage, I noticed that the playmat background on the creatures was missing a `'` around the url so I added that.
+Additionally, at this stage, I noticed that the playmat background on the creatures was missing a `'` around the URL so I added that.
 
 Now our layout is largely wired up to the GameState. Next, we will need to define some events which modify the GameState and attach those events to the UI.
 
@@ -1387,14 +1387,14 @@ This is the final commit in the branch `step-6-wire-up-layout-to-gamestate-part-
 ### Defining Events To Change the GameState
 ---
 
-As players play the game they can perform a number of actions which trigger events that modify the GameState.
+As players play the game they can perform a number of actions that trigger events that modify the GameState.
 
-*Note from a technical standpoint:* The GameState is actaully immutable and never changes but rather a new GameState is generated from an acton and the previous state. This new state replaces the past state.
+*Note from a technical standpoint:* The GameState is actually immutable and never changes but rather a new GameState is generated from an acton and the previous state. This new state replaces the past state.
 
 
-Initially, I am going to start just writing out some potenital events which could happen during the game and the associated event data they would carry.
+Initially, I am going to start just writing out some potential events which could happen during the game and the associated event data they would carry.
 
-* StartGame - Inititalizes a new game (Creates a new GameState)
+* StartGame - Initializes a new game (Creates a new GameState)
   * A unique GameID
   * Pair of Players with associated decks
   * PlayerID of Player to start game
@@ -1407,10 +1407,10 @@ Initially, I am going to start just writing out some potenital events which coul
   * CardInstanceID
 * PlayCard -
     If resources are available on the player's board:
-        remove the card from the players hand
+        remove the card from the player's hand
         - if a resource card add to the total resource pool
         - if an effect card trigger the effect
-        - if a character card create an inplay creature and trigger the   enter event. If no active create exists place the in play creature in the active potition otherwise place on the bench.
+        - if a character card creates an inplay creature and trigger the enter event. If no active create exists place the in-play creature in the active position otherwise place it on the bench.
     If the resources are not available add an error message to the gamestate
   * GameId
   * PlayerId
@@ -1430,7 +1430,7 @@ Initially, I am going to start just writing out some potenital events which coul
 * SkipAttack - Move the gamestate to reconcile
   * GameId
   * PlayerId
-* EndTurn - Mode the gamestate to teh other player's draw state
+* EndTurn - Mode the gamestate to the other player's draw state
   * GameId
   * PlayerId
 * GameWon - Move the gamestate to the game over state
@@ -1439,7 +1439,7 @@ Initially, I am going to start just writing out some potenital events which coul
 
 There will have to be additional events for things like tapping out/retreating active creatures but I think those would best be added after everything else is set up/works.
 
-Going through this process I have identified a few inital things that need to be added.
+Going through this process I have identified a few initial things that need to be added.
 
     * need a list of notifications on the GameState
     * need a GameStep for GameOver
@@ -1477,7 +1477,7 @@ I modified the domain models with:
         }
 ```
 
-I then had to update the init funciton for the new fields like
+I then had to update the init function for the new fields like
 ```
 
 let init =
@@ -1514,7 +1514,7 @@ let init =
     | _ -> "Failed to create players" |> Error
 ```
 
-I similarly had to update the currentStepInformation to utilize the updated GameStep type. Using the fact that whos turn it is is now embeded in the state I was able to simplify the yourCurrentStepClasses function like:
+I similarly had to update the currentStepInformation to utilize the updated GameStep type. Using the fact that whose turn it is now embedded in the state I was able to simplify the yourCurrentStepClasses function like:
 
 ```
 let yourCurrentStepClasses (gameState : GameState) (gamesStep: GameStep) =
@@ -1548,7 +1548,7 @@ let currentStepInformation (player: Player) (gameState : GameState) =
 
 At this point everything builds and I am checking it in with a commit message of `Step 7 Updates to GameState`.
 
-In the Client/Index.fs I can now modify the Msg type to be a descriminate union of all the above listed types. First though I am moving the Msg type into its own module/file Events/Events.fs.
+In the Client/Index.fs I can now modify the Msg type to be a discriminated union of all the above-listed types. First, I am moving the Msg type into its own module/file Events/Events.fs.
 
 Based on the above description I was able to define the events as follows:
 
@@ -1619,4 +1619,12 @@ type Msg =
 
 ```
 
-I am not recieving compiler errors for incomplete match statements but it builds. At this point I am commit these changes with the message `Update Msg type to include variety of events`.
+I am not receiving compiler errors for incomplete match statements but it builds. At this point, I am committing these changes with the message `Update Msg type to include a variety of events`.
+
+
+I am keeping this as the final commit in the branch `step-7-creating-events-to-update-state`
+
+In the next step/section I will be wiring up the events to actually modify the game state. Finally, we will be removing the `GameStarted` event and replace the initializing function with a hydrated `StartGame` event.
+
+### Wire up events to modify GameState
+---
