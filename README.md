@@ -1418,7 +1418,7 @@ Initially, I am going to start just writing out some potenital events which coul
 * EndPlayStep - Move the gamestate to the attack state
   * GameId
   * PlayerId
-* Attack -
+* PerformAttack -
     If the resources are available on the player's board:
         if the opponent has an inplay creature deal the damage from the attack to that creature. If the creature has <= 0 heath the creature dies
         if the opponent has no inplay creature deal the damage to the player
@@ -1549,3 +1549,74 @@ let currentStepInformation (player: Player) (gameState : GameState) =
 At this point everything builds and I am checking it in with a commit message of `Step 7 Updates to GameState`.
 
 In the Client/Index.fs I can now modify the Msg type to be a descriminate union of all the above listed types. First though I am moving the Msg type into its own module/file Events/Events.fs.
+
+Based on the above description I was able to define the events as follows:
+
+```
+type StartGameEvent =
+    {
+        GameId: GameId
+        Players: Map<Player, Deck>
+        StartingPlayer:PlayerId
+    }
+type DrawCardEvent =
+    {
+        GameId: GameId
+        PlayerId: PlayerId
+    }
+type DiscardCardEvent =
+    {
+        GameId: GameId
+        PlayerId: PlayerId
+        CardInstanceId: CardInstanceId
+    }
+type PlayCardEvent =
+    {
+        GameId: GameId
+        PlayerId: PlayerId
+        CardInstanceId: CardInstanceId
+    }
+type EndPlayStepEvent =
+    {
+        GameId: GameId
+        PlayerId: PlayerId
+    }
+type PerformAttackEvent =
+    {
+        GameId: GameId
+        PlayerId: PlayerId
+        InPlayCreatureId: InPlayCreatureId
+        Attack: Attack
+    }
+type SkipAttackEvent =
+    {
+        GameId: GameId
+        PlayerId: PlayerId
+    }
+type EndTurnEvent =
+    {
+        GameId: GameId
+        PlayerId: PlayerId
+    }
+type GameWonEvent =
+    {
+        GameId: GameId
+        Winner: Option<PlayerId>
+        Message: Option<Notification list>
+    }
+
+type Msg =
+    | GameStarted
+    | StartGame of StartGameEvent
+    | DrawCard of DrawCardEvent
+    | DiscardCard of DiscardCardEvent
+    | PlayCard of PlayCardEvent
+    | EndPlayStep of EndPlayStepEvent
+    | PerformAttack of PerformAttackEvent
+    | SkipAttack of SkipAttackEvent
+    | EndTurn of EndTurnEvent
+    | GameWon of GameWonEvent
+
+```
+
+I am not recieving compiler errors for incomplete match statements but it builds. At this point I am commit these changes with the message `Update Msg type to include variety of events`.
