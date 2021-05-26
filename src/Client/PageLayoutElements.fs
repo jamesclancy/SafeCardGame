@@ -181,22 +181,22 @@ let currentStepInformation (player: Player) (playerBoard: PlayerBoard) (gameStat
     div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
                         [ p [ Class "control" ]
-                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Draw)
+                            [ button [ Class (yourCurrentStepClasses player gameState (player.PlayerId |> GameStep.Draw))
                                        Disabled true ]
                                 [ span [ ]
                                     [ str "Draw" ] ] ]
                           p [ Class "control" ]
-                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Play)
+                            [ button [ Class (yourCurrentStepClasses player gameState (player.PlayerId |> GameStep.Draw))
                                        Disabled true ]
                                 [ span [ ]
                                     [ str "Play" ] ] ]
                           p [ Class "control" ]
-                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Attack)
+                            [ button [ Class (yourCurrentStepClasses player gameState (player.PlayerId |> GameStep.Draw))
                                        Disabled true ]
                                 [ span [ ]
                                     [ str "Attack" ] ] ]
                           p [ Class "control" ]
-                            [ button [ Class (yourCurrentStepClasses player gameState GameStep.Reconcile)
+                            [ button [ Class (yourCurrentStepClasses player gameState (player.PlayerId |> GameStep.Draw))
                                        Disabled true ]
                                 [ span [ ]
                                     [ str "Reconcile" ] ] ] ] ]

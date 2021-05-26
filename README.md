@@ -1441,7 +1441,110 @@ There will have to be additional events for things like tapping out/retreating a
 
 Going through this process I have identified a few inital things that need to be added.
 
-    * need a message string on the GameState
-    * need a CurrentState for GameOver
-    * need an optional winner on the GameState
+    * need a list of notifications on the GameState
+    * need a GameStep for GameOver
+    * need an optional winner on the GameOver Step
     * need a game id on the GameState
+
+I am not thinking that the CurrentPlayerTurn should actually be on the Game Step so I am refactoring that type.
+
+I modified the domain models with:
+
+```
+    and GameOverStep =
+        {
+            WinnerId: Option<PlayerId>
+            Message: string
+        }
+    and GameStep =
+        NotCurrentlyPlaying
+        | Draw of PlayerId
+        | Play of PlayerId
+        | Attack of PlayerId
+        | Reconcile of PlayerId
+        | GameOver of GameOverStep
+    and Notification = string
+    and GameState =
+        {
+            GameId: GameId
+            NotificationMessages: Option<Notification list>
+            CurrentPlayer: PlayerId
+            OpponentPlayer: PlayerId
+            Players: Map<PlayerId, Player>
+            Boards: Map<PlayerId, PlayerBoard>
+            CurrentStep:GameStep
+            TurnNumber: int
+        }
+```
+
+I then had to update the init funciton for the new fields like
+```
+
+let init =
+    let player1 = createPlayer "Player1" "Player1" 10 "https://picsum.photos/id/1000/2500/1667?blur=5"
+    let player2 = createPlayer "Player2" "Player2" 10 "https://picsum.photos/id/10/2500/1667?blur=5"
+    let gameId =  NonEmptyString.build "GameIDHere" |> Result.map GameId
+
+    match player1, player2, gameId with
+    | Ok p1, Ok p2, Ok g ->
+        let playerBoard1 = playerBoard p1
+        let playerBoard2 = playerBoard p2
+        match playerBoard1, playerBoard2 with
+        | Ok pb1, Ok pb2 ->
+          let model =
+            {
+                GameId = g
+                Players =  [
+                            p1.PlayerId, p1;
+                            p2.PlayerId, p2
+                           ] |> Map.ofList
+                Boards =   [
+                            pb1.PlayerId, pb1;
+                            pb2.PlayerId, pb2
+                           ] |> Map.ofList
+                NotificationMessages = None
+                CurrentStep=  p1.PlayerId |> Attack
+                TurnNumber = 1
+                CurrentPlayer = p1.PlayerId
+                OpponentPlayer = p2.PlayerId
+            }
+          let cmd = Cmd.ofMsg GameStarted
+          Ok (model, cmd)
+        | _ -> "Failed to create player boards" |> Error
+    | _ -> "Failed to create players" |> Error
+```
+
+I similarly had to update the currentStepInformation to utilize the updated GameStep type. Using the fact that whos turn it is is now embeded in the state I was able to simplify the yourCurrentStepClasses function like:
+
+```
+let yourCurrentStepClasses (gameState : GameState) (gamesStep: GameStep) =
+        if gameState.CurrentStep = gamesStep then "button is-danger"
+        else "button is-primary"
+
+let currentStepInformation (player: Player) (gameState : GameState) =
+    div [ Class "navbar-item" ]
+                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
+                        [ p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses gameState (player.PlayerId |> GameStep.Draw))
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Draw" ] ] ]
+                          p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses gameState (player.PlayerId |> GameStep.Draw))
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Play" ] ] ]
+                          p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses gameState (player.PlayerId |> GameStep.Draw))
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Attack" ] ] ]
+                          p [ Class "control" ]
+                            [ button [ Class (yourCurrentStepClasses gameState (player.PlayerId |> GameStep.Draw))
+                                       Disabled true ]
+                                [ span [ ]
+                                    [ str "Reconcile" ] ] ] ] ]
+```
+
+At this point everything builds and I am checking it in with a commit message of `Step 7 Updates to GameState`.
+
