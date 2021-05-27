@@ -56,7 +56,7 @@ let testCardGenerator cardInstanceIdStr cardIdStr cardImageUrlStr =
                 Description = "A rare creature with stange and powers."
             }
         Ok  {
-                CardIntanceId  =  id
+                CardInstanceId  =  id
                 Card =  card |> CharacterCard
             }
     | _, _, _ ->
@@ -187,26 +187,63 @@ let intitalizeGameStateFromStartGameEvent (ev : StartGameEvent) =
                 TurnNumber= 1
             }
 
-(*
-let appendNotificationMessageToListOrCreateList (existingNotifications : Option<Notification list), (newNotification : string) =
-    match existingNotifcatons with
-    |Some nl ->
+let appendNotificationMessageToListOrCreateList (existingNotifications : Option<Notification list>) (newNotification : string) =
+    match existingNotifications with
+    | Some nl ->
         newNotification
         |> Notification
-        |> nl.Add
+        |> (fun y -> y :: nl)
         |> Some
     | None ->
         [ (newNotification |> Notification) ]
         |> Some
-*)
+
+let getExistingPlayerBoardFromGameState playerId gs =
+ match gs.Boards.TryGetValue playerId with
+    | true, pb ->
+        pb |> Ok
+    | false, _ ->
+        (sprintf "Unable to locate player board for player id %s" (playerId.ToString())) |> Error
 
 let modifyGameStateFromDrawCardEvent (ev: DrawCardEvent) (gs: GameState) =
-    match gs.Boards.TryGetValue ev.PlayerId with
-    | true, pb ->
+    match getExistingPlayerBoardFromGameState ev.PlayerId gs with
+    | Ok pb ->
         let newDeck, newHand =  drawCardsFromDeck 1 pb.Deck pb.Hand
         { gs with Boards = (gs.Boards.Add (ev.PlayerId, { pb with Deck = newDeck; Hand = newHand })  ) }
-    | false, _ ->
-        gs//{ gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages "Unable to lookup player board" }
+    | Error e ->
+        { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
+
+let discardCardFromBoard (cardInstanceId : CardInstanceId) (playerBoard : PlayerBoard) =
+    let cardToDiscard : CardInstance list = List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards
+
+    match cardToDiscard with
+    | [] ->
+        (sprintf "Unable to locate card in hand with card instance id %s" (cardInstanceId.ToString())) |> Error
+    | [ x ] ->
+            {
+                playerBoard
+                    with Hand =
+                          { playerBoard.Hand with
+
+                                Cards = (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)
+
+                          };
+                         DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+            } |> Ok
+    | _ ->
+        (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
+
+let modifyGameStateFromDiscardCardEvent (ev: DiscardCardEvent) (gs: GameState) =
+    let newBoard =
+        getExistingPlayerBoardFromGameState ev.PlayerId gs
+        |> Result.bind (discardCardFromBoard ev.CardInstanceId)
+
+    match newBoard with
+    | Ok pb ->
+        { gs with Boards = (gs.Boards.Add (ev.PlayerId, pb)  ) }
+    | Error e ->
+        { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
+
 
 
 let init =
@@ -251,7 +288,7 @@ let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
     | DrawCard  ev ->
         modifyGameStateFromDrawCardEvent ev model, Cmd.none
     | DiscardCard ev ->
-        model, Cmd.none
+        modifyGameStateFromDiscardCardEvent ev model, Cmd.none
     | PlayCard ev ->
         model, Cmd.none
     | EndPlayStep ev ->

@@ -88,7 +88,7 @@ module Domain =
         }
     and CardInstance =
         {
-            CardIntanceId : CardInstanceId
+            CardInstanceId : CardInstanceId
             Card: Card
         }
     and Card =

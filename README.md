@@ -1718,3 +1718,73 @@ let intitalizeGameStateFromStartGameEvent (ev : StartGameEvent) =
 Then I just ahve to call intitalizeGameStateFromStartGameEvent from my update swithc statement.
 
 Using the same draw function I can impement the draw event.
+
+```
+let appendNotificationMessageToListOrCreateList (existingNotifications : Option<Notification list) (newNotification : string) =
+    match existingNotifications with
+    | Some nl ->
+        newNotification
+        |> Notification
+        |> (fun y -> y :: nl)
+        |> Some
+    | None ->
+        [ (newNotification |> Notification) ]
+        |> Some
+
+let modifyGameStateFromDrawCardEvent (ev: DrawCardEvent) (gs: GameState) =
+    match gs.Boards.TryGetValue ev.PlayerId with
+    | true, pb ->
+        let newDeck, newHand =  drawCardsFromDeck 1 pb.Deck pb.Hand
+        { gs with Boards = (gs.Boards.Add (ev.PlayerId, { pb with Deck = newDeck; Hand = newHand })  ) }
+    | false, _ ->
+        { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages "Unable to lookup player board" }
+```
+
+I realize there has to be a better way to pipe into a list then `|> (fun y -> y :: nl)` but I am just going to leave that for now.
+
+Discard card is next. I noticed a type in the name `CardInstanceId` so I corrected that. Also, I notice I will similarly have to pull the player board from the state so I should extract that to be a function like:
+
+```
+let getExistingPlayerBoardFromGameState playerId gs =
+ match gs.Boards.TryGetValue playerId with
+    | true, pb ->
+        pb |> Ok
+    | false, _ ->
+        (sprintf "Unable to locate player board for player id %s" (playerId.ToString())) |> Error
+```
+
+I am then able to implement a discardCardFromBoard function like:
+
+```
+let discardCardFromBoard (cardInstanceId : CardInstanceId) (playerBoard : PlayerBoard) =
+    let cardToDiscard : CardInstance list = List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards
+
+    match cardToDiscard with
+    | [] ->
+        (sprintf "Unable to locate card in hand with card instance id %s" (cardInstanceId.ToString())) |> Error
+    | [ x ] ->
+            {
+                playerBoard
+                    with Hand =
+                          { playerBoard.Hand with
+
+                                Cards = (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)
+
+                          };
+                         DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+            } |> Ok
+    | _ ->
+        (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
+
+let modifyGameStateFromDiscardCardEvent (ev: DiscardCardEvent) (gs: GameState) =
+    let newBoard =
+        getExistingPlayerBoardFromGameState ev.PlayerId gs
+        |> Result.bind (discardCardFromBoard ev.CardInstanceId)
+
+    match newBoard with
+    | Ok pb ->
+        { gs with Boards = (gs.Boards.Add (ev.PlayerId, pb)  ) }
+    | Error e ->
+        { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
+
+```
