@@ -144,6 +144,70 @@ let playerBoard (player : Player) =
             }
     | _,_, _,_ -> "Error creating deck or hand" |> Error
 
+let drawCardsFromDeck (cardsToDraw: int) (deck : Deck) (hand: Hand) =
+    if deck.Cards.IsEmpty then
+        deck, hand
+    else
+        let cardsToTake = List.truncate cardsToDraw deck.Cards
+        { deck with Cards = List.skip cardsToTake.Length deck.Cards}, {hand with Cards = hand.Cards @ cardsToTake}
+
+
+let takeDeckDealFirstHandAndReturnNewPlayerBoard (intitalHandSize: int) (playerId : PlayerId) (deck : Deck) =
+    let emptyHand =
+      {
+        Cards = list.Empty
+      }
+    let deckAfterDraw, hand = drawCardsFromDeck intitalHandSize deck emptyHand
+
+    {
+        PlayerId=  playerId
+        Deck= deckAfterDraw
+        Hand=hand
+        ActiveCreature= None
+        Bench=  None
+        DiscardPile= {
+            TopCardsExposed = 0
+            Cards = List.empty
+        }
+        TotalResourcePool= ResourcePool Seq.empty
+        AvailableResourcePool =  ResourcePool Seq.empty
+    }
+
+let intitalizeGameStateFromStartGameEvent (ev : StartGameEvent) =
+            {
+                GameId= ev.GameId
+                NotificationMessages= None
+                CurrentPlayer= ev.CurrentPlayer
+                OpponentPlayer= ev.OpponentPlayer
+                Players= ev.Players
+                Boards= ev.Decks
+                        |> Seq.map (fun x -> x.Key, takeDeckDealFirstHandAndReturnNewPlayerBoard 7 x.Key x.Value )
+                        |> Map.ofSeq
+                CurrentStep= ev.CurrentPlayer |> Draw
+                TurnNumber= 1
+            }
+
+(*
+let appendNotificationMessageToListOrCreateList (existingNotifications : Option<Notification list), (newNotification : string) =
+    match existingNotifcatons with
+    |Some nl ->
+        newNotification
+        |> Notification
+        |> nl.Add
+        |> Some
+    | None ->
+        [ (newNotification |> Notification) ]
+        |> Some
+*)
+
+let modifyGameStateFromDrawCardEvent (ev: DrawCardEvent) (gs: GameState) =
+    match gs.Boards.TryGetValue ev.PlayerId with
+    | true, pb ->
+        let newDeck, newHand =  drawCardsFromDeck 1 pb.Deck pb.Hand
+        { gs with Boards = (gs.Boards.Add (ev.PlayerId, { pb with Deck = newDeck; Hand = newHand })  ) }
+    | false, _ ->
+        gs//{ gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages "Unable to lookup player board" }
+
 
 let init =
     let player1 = createPlayer "Player1" "Player1" 10 "https://picsum.photos/id/1000/2500/1667?blur=5"
@@ -181,6 +245,24 @@ let init =
 let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
     match msg with
     | GameStarted ->
+        model, Cmd.none
+    | StartGame ev ->
+        intitalizeGameStateFromStartGameEvent ev, Cmd.none
+    | DrawCard  ev ->
+        modifyGameStateFromDrawCardEvent ev model, Cmd.none
+    | DiscardCard ev ->
+        model, Cmd.none
+    | PlayCard ev ->
+        model, Cmd.none
+    | EndPlayStep ev ->
+        model, Cmd.none
+    | PerformAttack  ev ->
+        model, Cmd.none
+    | SkipAttack ev ->
+        model, Cmd.none
+    | EndTurn ev ->
+        model, Cmd.none
+    | GameWon ev ->
         model, Cmd.none
 
 

@@ -170,7 +170,7 @@ module Domain =
         | Attack of PlayerId
         | Reconcile of PlayerId
         | GameOver of GameOverStep
-    and Notification = string
+    and Notification = Notification of string
     and GameState =
         {
             GameId: GameId

@@ -1628,3 +1628,93 @@ In the next step/section I will be wiring up the events to actually modify the g
 
 ### Wire up events to modify GameState
 ---
+
+These update to the gamestate will occur in the update function of the client Index.fs
+
+
+First I scofolded out the update function like:
+
+```
+let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
+    match msg with
+    | GameStarted ->
+        model, Cmd.none
+    | StartGame ev ->
+        model, Cmd.none
+    | DrawCard  ev ->
+        model, Cmd.none
+    | DiscardCard ev ->
+        model, Cmd.none
+    | PlayCard ev ->
+        model, Cmd.none
+    | EndPlayStep ev ->
+        model, Cmd.none
+    | PerformAttack  ev ->
+        model, Cmd.none
+    | SkipAttack ev ->
+        model, Cmd.none
+    | EndTurn ev ->
+        model, Cmd.none
+    | GameWon ev ->
+        model, Cmd.none
+```
+
+First I will implement to `StartGame` handler.
+
+
+In order to do this I first created a `takeDeckDealFirstHandAndReturnNewPlayerBoard` function:
+
+```
+let takeDeckDealFirstHandAndReturnNewPlayerBoard (intitalHandSize: int) (playerId : PlayerId) (deck : Deck) =
+    let emptyHand =
+      {
+        Cards = list.Empty
+      }
+    let deckAfterDraw, hand = drawCardsFromDeck intitalHandSize deck emptyHand
+
+    {
+        PlayerId=  playerId
+        Deck= deckAfterDraw
+        Hand=hand
+        ActiveCreature= None
+        Bench=  None
+        DiscardPile= {
+            TopCardsExposed = 0
+            Cards = List.empty
+        }
+        TotalResourcePool= ResourcePool Seq.empty
+        AvailableResourcePool =  ResourcePool Seq.empty
+    }
+```
+
+This references a new function to draw cards:
+```
+let drawCardsFromDeck (cardsToDraw: int) (deck : Deck) (hand: Hand) =
+    if deck.Cards.IsEmpty then
+        deck, hand
+    else
+        let cardsToTake = List.truncate cardsToDraw deck.Cards
+        { deck with Cards = List.skip cardsToTake.Length deck.Cards}, {hand with Cards = hand.Cards @ cardsToTake}
+
+```
+
+Then I was able to intialize the state as:
+```
+let intitalizeGameStateFromStartGameEvent (ev : StartGameEvent) =
+            {
+                GameId= ev.GameId
+                NotificationMessages= None
+                CurrentPlayer= ev.CurrentPlayer
+                OpponentPlayer= ev.OpponentPlayer
+                Players= ev.Players
+                Boards= ev.Decks
+                        |> Seq.map (fun x -> x.Key, takeDeckDealFirstHandAndReturnNewPlayerBoard 7 x.Key x.Value )
+                        |> Map.ofSeq
+                CurrentStep= ev.CurrentPlayer |> Draw
+                TurnNumber= 1
+            }
+
+```
+Then I just ahve to call intitalizeGameStateFromStartGameEvent from my update swithc statement.
+
+Using the same draw function I can impement the draw event.
