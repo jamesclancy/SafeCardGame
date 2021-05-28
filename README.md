@@ -1788,3 +1788,51 @@ let modifyGameStateFromDiscardCardEvent (ev: DiscardCardEvent) (gs: GameState) =
         { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
 
 ```
+
+The end play step should jsut move the player to the Attack step like:
+
+```
+    | EndPlayStep ev ->
+        { model with CurrentStep = (Attack ev.PlayerId)}, Cmd.none
+```
+
+Similarly, SkipAttack should just move the player to the Reconcile step.
+
+```
+    | SkipAttack ev ->
+        { model with CurrentStep = (Reconcile ev.PlayerId)}, Cmd.none
+```
+
+EndTurn should just move the game to the draw step of the other player.
+
+```
+    | EndTurn ev ->
+        let otherPlayer = getTheOtherPlayer model ev.PlayerId
+        { model with CurrentStep = (Draw otherPlayer)}, Cmd.none
+```
+
+Game Won should transition to the GameOverState, set a winner and a message but I will first have to define a function to format teh GameOverMessage like:
+
+```
+let formatGameOverMessage (notifications : Option<Notification list>) =
+    match notifications with
+    | None ->
+        "Game Over for unknown reason"
+    | Some [] ->
+        "Game Over for unknown reason"
+    | Some x ->
+        x
+        |> Seq.map (fun x -> x.ToString())
+        |> String.concat ";"
+```
+
+then I can
+
+```
+    | GameWon ev ->
+        let newStep =  { WinnerId =  ev.Winner; Message = formatGameOverMessage ev.Message } |> GameOver
+        { model with CurrentStep = newStep}, Cmd.none
+```
+
+This involved some copy pasta which could be removed and refactored but I am just going to keep driving on for now.
+

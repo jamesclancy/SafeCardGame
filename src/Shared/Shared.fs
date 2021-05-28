@@ -175,8 +175,8 @@ module Domain =
         {
             GameId: GameId
             NotificationMessages: Option<Notification list>
-            CurrentPlayer: PlayerId
-            OpponentPlayer: PlayerId
+            PlayerOne: PlayerId
+            PlayerTwo: PlayerId
             Players: Map<PlayerId, Player>
             Boards: Map<PlayerId, PlayerBoard>
             CurrentStep:GameStep

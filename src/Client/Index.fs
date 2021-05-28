@@ -177,13 +177,13 @@ let intitalizeGameStateFromStartGameEvent (ev : StartGameEvent) =
             {
                 GameId= ev.GameId
                 NotificationMessages= None
-                CurrentPlayer= ev.CurrentPlayer
-                OpponentPlayer= ev.OpponentPlayer
+                PlayerOne= ev.PlayerOne
+                PlayerTwo= ev.PlayerTwo
                 Players= ev.Players
                 Boards= ev.Decks
                         |> Seq.map (fun x -> x.Key, takeDeckDealFirstHandAndReturnNewPlayerBoard 7 x.Key x.Value )
                         |> Map.ofSeq
-                CurrentStep= ev.CurrentPlayer |> Draw
+                CurrentStep= ev.PlayerOne |> Draw
                 TurnNumber= 1
             }
 
@@ -271,13 +271,30 @@ let init =
                 NotificationMessages = None
                 CurrentStep =  (p1.PlayerId |> Attack)
                 TurnNumber = 1
-                CurrentPlayer = p1.PlayerId
-                OpponentPlayer = p2.PlayerId
+                PlayerOne = p1.PlayerId
+                PlayerTwo = p2.PlayerId
             }
           let cmd = Cmd.ofMsg GameStarted
           Ok (model, cmd)
         | _ -> "Failed to create player boards" |> Error
     | _ -> "Failed to create players" |> Error
+
+let getTheOtherPlayer (gameState : GameState) playerId =
+    if gameState.PlayerOne = playerId then
+        gameState.PlayerTwo
+    else
+        gameState.PlayerOne
+
+let formatGameOverMessage (notifications : Option<Notification list>) =
+    match notifications with
+    | None ->
+        "Game Over for unknown reason"
+    | Some [] ->
+        "Game Over for unknown reason"
+    | Some x ->
+        x
+        |> Seq.map (fun x -> x.ToString())
+        |> String.concat ";"
 
 let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
     match msg with
@@ -292,15 +309,17 @@ let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
     | PlayCard ev ->
         model, Cmd.none
     | EndPlayStep ev ->
-        model, Cmd.none
+        { model with CurrentStep = (Attack ev.PlayerId)}, Cmd.none
     | PerformAttack  ev ->
         model, Cmd.none
     | SkipAttack ev ->
-        model, Cmd.none
+        { model with CurrentStep = (Reconcile ev.PlayerId)}, Cmd.none
     | EndTurn ev ->
-        model, Cmd.none
+        let otherPlayer = getTheOtherPlayer model ev.PlayerId
+        { model with CurrentStep = (Draw otherPlayer)}, Cmd.none
     | GameWon ev ->
-        model, Cmd.none
+        let newStep =  { WinnerId =  ev.Winner; Message = formatGameOverMessage ev.Message } |> GameOver
+        { model with CurrentStep = newStep}, Cmd.none
 
 
 let view (model : GameState) (dispatch : Msg -> unit) =
