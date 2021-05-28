@@ -8,24 +8,24 @@ open Shared.Domain
 
 
 let opponentPlayer (model : GameState) =
-    match model.Players.TryGetValue model.OpponentPlayer with
+    match model.Players.TryGetValue model.PlayerTwo with
     | true, p -> p |> Ok
     | false, _ -> "Unable to locate oppponent in player list" |> Error
 
 
 let opponentPlayerBoard (model : GameState) =
-    match model.Boards.TryGetValue model.OpponentPlayer with
+    match model.Boards.TryGetValue model.PlayerTwo with
     | true, p -> p |> Ok
     | false, _ -> "Unable to locate oppponent in board list" |> Error
 
 let currentPlayer (model : GameState) =
-    match model.Players.TryGetValue model.CurrentPlayer with
+    match model.Players.TryGetValue model.PlayerOne with
     | true, p -> p |> Ok
     | false, _ -> "Unable to locate current player in player list" |> Error
 
 
 let currentPlayerBoard (model : GameState) =
-    match model.Boards.TryGetValue model.CurrentPlayer with
+    match model.Boards.TryGetValue model.PlayerOne with
     | true, p -> p |> Ok
     | false, _ -> "Unable to locate current player in board list" |> Error
 

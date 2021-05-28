@@ -79,6 +79,8 @@ let testCardSeqGenerator (numberOfCards : int) =
                     | _,_ -> "Eating Errors lol" |> Error
                 ) (Ok List.empty)
 
+
+
 let inPlayCreatureGenerator inPlayCreatureIdStr cardInstanceIdStr cardIdStr cardImageUrlStr =
         let inPlayCreatureId = NonEmptyString.build inPlayCreatureIdStr |> Result.map InPlayCreatureId
         let card = testCardGenerator cardInstanceIdStr cardIdStr cardImageUrlStr
@@ -244,6 +246,116 @@ let modifyGameStateFromDiscardCardEvent (ev: DiscardCardEvent) (gs: GameState) =
     | Error e ->
         { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
 
+let applyEffectIfDefinied effect gs =
+    match effect with
+    | Some e -> e.Function.Invoke gs |> Ok
+    | None  -> gs |> Ok
+
+let addResourcesToPool (rp1 : Map<Resource, int>)  (rp2 : seq< Resource * int>) =
+    match rp2 with
+    | [ ] ->  rp1 |> ResourcePool
+    | [ x ] ->
+        rp1.Add(x.Key, x.Value + r.Value)  |> ResourcePool
+    | [x :: xs] ->
+        addResourcesToPool (rp1.Add x.Key  x.Value + r.Value) xs
+
+let createInPlayCreatureFromCardInstance characterCard inPlayCreatureId =
+            {
+                InPlayCharacterId=  inPlayCreatureId
+                Card = characterCard
+                CurrentDamage=  0
+                SpecialEffect=  None
+                AttachedEnergy =  Seq.empty |> ResourcePool
+                SpentEnergy = Seq.empty |> ResourcePool
+            } |> Ok
+
+let appendCreatureToPlayerBoard inPlayCreature playerBoard =
+        match playerBoard.ActiveCreature with
+        | None ->
+            { playerBoard with ActiveCreature = Some inPlayCreature }
+        | Some a ->
+            { playerBoard
+                with Bench
+                    = Option.fold (fun x-> (Some ([ inPlayCreature] @ x)))
+                                  (Some [ inPlayCreature ])
+                                  playerBoard.Bench  }
+
+
+let addCreatureToGameState cardInstanceId x playerId gs playerBoard inPlayCreature=
+        let playerBoard =
+                        {
+                            playerBoard
+                                with Hand =
+                                        {
+                                          playerBoard.Hand with
+                                            Cards = (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)
+                                        };
+                                     DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+                        } |> (appendCreatureToPlayerBoard inPlayCreature)
+
+        { gs with Boards = gs.Boards.Add ( playerId, playerBoard) } |> Ok
+
+let buildInPlayCreatureId idStr =
+    let res = idStr |> NonEmptyString.build
+
+    match res with
+    | Ok r -> InPlayCreatureId r |> Ok
+    | Error e -> Error e
+
+
+let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (gs: GameState) (playerBoard : PlayerBoard) =
+    let cardToDiscard : CardInstance list = List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards
+
+    match cardToDiscard with
+    | [] ->
+        (sprintf "Unable to locate card in hand with card instance id %s" (cardInstanceId.ToString())) |> Error
+    | [ x ] ->
+            match x.Card with
+            | CharacterCard cc ->
+
+              System.Guid.NewGuid().ToString()
+              |> buildInPlayCreatureId
+              |> (Result.bind (createInPlayCreatureFromCardInstance x.Card))
+              |> (Result.bind (addCreatureToGameState cardInstanceId x playerId gs playerBoard))
+              |> (Result.bind  (applyEffectIfDefinied cc.EnterSpecialEffects))
+
+            | ResourceCard rc ->
+              let newPb = {
+                  playerBoard
+                    with Hand =
+                          { playerBoard.Hand with
+
+                                Cards = (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)
+                          };
+                         TotalResourcePool = addResourcesToPool playerBoard.TotalResourcePool (Map.toSeq rc.ResourcesAdded)
+                         DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+                }
+              { gs with Boards = (gs.Boards.Add (playerId, newPb)) } |> (applyEffectIfDefinied rc.EnterSpecialEffects) |> Result.bind (applyEffectIfDefinied rc.ExitSpecialEffects)
+            | EffectCard ec ->
+              let newPb =  {
+                  playerBoard
+                    with Hand =
+                          { playerBoard.Hand with
+
+                                Cards = (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)
+                          };
+                         DiscardPile = {playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+                }
+              { gs with Boards = (gs.Boards.Add (playerId, newPb) ) } |> (applyEffectIfDefinied ec.EnterSpecialEffects) |> Result.bind (applyEffectIfDefinied ec.ExitSpecialEffects)
+    | _ ->
+        (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
+
+
+let modifyGameStateFromPlayCardEvent (ev: PlayCardEvent) (gs: GameState) =
+    let newBoard =
+        getExistingPlayerBoardFromGameState ev.PlayerId gs
+        |> Result.bind (playCardFromBoard  ev.CardInstanceId ev.PlayerId gs)
+
+    match newBoard with
+    | Ok pb ->
+        pb
+    | Error e ->
+        { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
 
 
 let init =

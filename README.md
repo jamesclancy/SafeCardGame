@@ -1836,3 +1836,4 @@ then I can
 
 This involved some copy pasta which could be removed and refactored but I am just going to keep driving on for now.
 
+This now just leaves me to complete the play card and attack events.
