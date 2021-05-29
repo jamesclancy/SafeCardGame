@@ -116,7 +116,7 @@ let renderEnemyActiveCreature (inPlayCreature : Option<InPlayCreature>) =
                                   table [ ]
                                     [
                                         yield! seq {
-                                            for a in card.Creature.Attach do
+                                            for a in card.Creature.Attack do
                                                 (renderAttackRow a)
                                         } ] ] ] ] ]
 
@@ -171,32 +171,30 @@ let enemyCreatures  (player: Player) (playerBoard: PlayerBoard) =
                       renderEnemyBench playerBoard.Bench
                     ] ] ] ] ]
 
-let yourCurrentStepClasses (player: Player) (gameState : GameState) (gamesStep: GameStep) =
-    if not (player.PlayerId = gameState.CurrentPlayer) then "button is-primary"
-    else
+let yourCurrentStepClasses (gameState : GameState) (gamesStep: GameStep) =
         if gameState.CurrentStep = gamesStep then "button is-danger"
         else "button is-primary"
 
-let currentStepInformation (player: Player) (playerBoard: PlayerBoard) (gameState : GameState) =
+let currentStepInformation (player: Player) (gameState : GameState) =
     div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
                         [ p [ Class "control" ]
-                            [ button [ Class (yourCurrentStepClasses player gameState (player.PlayerId |> GameStep.Draw))
+                            [ button [ Class (yourCurrentStepClasses gameState (player.PlayerId |> GameStep.Draw))
                                        Disabled true ]
                                 [ span [ ]
                                     [ str "Draw" ] ] ]
                           p [ Class "control" ]
-                            [ button [ Class (yourCurrentStepClasses player gameState (player.PlayerId |> GameStep.Draw))
+                            [ button [ Class (yourCurrentStepClasses gameState (player.PlayerId |> GameStep.Draw))
                                        Disabled true ]
                                 [ span [ ]
                                     [ str "Play" ] ] ]
                           p [ Class "control" ]
-                            [ button [ Class (yourCurrentStepClasses player gameState (player.PlayerId |> GameStep.Draw))
+                            [ button [ Class (yourCurrentStepClasses gameState (player.PlayerId |> GameStep.Draw))
                                        Disabled true ]
                                 [ span [ ]
                                     [ str "Attack" ] ] ]
                           p [ Class "control" ]
-                            [ button [ Class (yourCurrentStepClasses player gameState (player.PlayerId |> GameStep.Draw))
+                            [ button [ Class (yourCurrentStepClasses gameState (player.PlayerId |> GameStep.Draw))
                                        Disabled true ]
                                 [ span [ ]
                                     [ str "Reconcile" ] ] ] ] ]
@@ -211,7 +209,7 @@ let playerControlCenter  (player: Player) (playerBoard: PlayerBoard) (gameState 
           div [ Class "navbar-menu" ]
             [ div [ Class "navbar-start" ]
                 [ yield! playerStats player playerBoard
-                  currentStepInformation player playerBoard gameState ]
+                  currentStepInformation player gameState ]
               div [ Class "navbar-end" ]
                 [ div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
@@ -252,7 +250,7 @@ let playerActiveCreature (inPlayCreature : Option<InPlayCreature>) =
                                   table [ ]
                                     [
                                         yield! seq {
-                                            for a in card.Creature.Attach do
+                                            for a in card.Creature.Attack do
                                                 (renderAttackRow a)
                                         } ] ] ]
                           footer [ Class "card-footer" ]
@@ -287,7 +285,7 @@ let playerBenchCreature (inPlayCreature : InPlayCreature)=
                                   table [ ]
                                     [
                                         yield! seq {
-                                            for a in card.Creature.Attach do
+                                            for a in card.Creature.Attack do
                                                 (renderAttackRow a)
                                         } ] ] ] ] ]
 
@@ -363,7 +361,7 @@ let renderCharacterCard (card: CharacterCard) =
                               table [ ]
                                 [
                                   yield! seq {
-                                    for a in card.Creature.Attach do
+                                    for a in card.Creature.Attack do
                                       (renderAttackRow a)
                                   }
                                 ] ] ]

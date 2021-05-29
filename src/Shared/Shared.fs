@@ -88,7 +88,7 @@ module Domain =
         }
     and CardInstance =
         {
-            CardIntanceId : CardInstanceId
+            CardInstanceId : CardInstanceId
             Card: Card
         }
     and Card =
@@ -139,7 +139,7 @@ module Domain =
         {
             Health: int
             Weaknesses: Resource list
-            Attach: Attack list
+            Attack: Attack list
         }
     and Attack =
         {
@@ -170,13 +170,13 @@ module Domain =
         | Attack of PlayerId
         | Reconcile of PlayerId
         | GameOver of GameOverStep
-    and Notification = string
+    and Notification = Notification of string
     and GameState =
         {
             GameId: GameId
             NotificationMessages: Option<Notification list>
-            CurrentPlayer: PlayerId
-            OpponentPlayer: PlayerId
+            PlayerOne: PlayerId
+            PlayerTwo: PlayerId
             Players: Map<PlayerId, Player>
             Boards: Map<PlayerId, PlayerBoard>
             CurrentStep:GameStep

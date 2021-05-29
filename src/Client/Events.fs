@@ -5,8 +5,10 @@ open Shared.Domain
 type StartGameEvent =
     {
         GameId: GameId
-        Players: Map<Player, Deck>
-        StartingPlayer:PlayerId
+        Players: Map<PlayerId, Player>
+        Decks: Map<PlayerId, Deck>
+        PlayerOne:PlayerId
+        PlayerTwo:PlayerId
     }
 type DrawCardEvent =
     {
