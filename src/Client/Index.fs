@@ -40,7 +40,7 @@ let testCardGenerator cardInstanceIdStr cardIdStr cardImageUrlStr =
           {
             Health= 95
             Weaknesses=  List.empty
-            Attach = List.empty
+            Attack = List.empty
           }
         let card =
             {
@@ -251,13 +251,19 @@ let applyEffectIfDefinied effect gs =
     | Some e -> e.Function.Invoke gs |> Ok
     | None  -> gs |> Ok
 
-let addResourcesToPool (rp1 : Map<Resource, int>)  (rp2 : seq< Resource * int>) =
+let currentResourceAmountFromPool (resourcePool : ResourcePool) (resource : Resource) =
+    match resourcePool.TryGetValue(resource) with
+    | true, t -> t
+    | false, _ -> 0
+
+let rec addResourcesToPool (rp1 : Map<Resource, int>)  rp2 =
     match rp2 with
-    | [ ] ->  rp1 |> ResourcePool
-    | [ x ] ->
-        rp1.Add(x.Key, x.Value + r.Value)  |> ResourcePool
-    | [x :: xs] ->
-        addResourcesToPool (rp1.Add x.Key  x.Value + r.Value) xs
+    | [] ->  rp1 |> Map.toSeq |> ResourcePool
+    | [ (x,y) ] ->
+        rp1.Add(x, y + (currentResourceAmountFromPool rp1 x))  |> Map.toSeq |> ResourcePool
+    | (x,y) :: xs  ->
+        addResourcesToPool (rp1.Add(x,  y + (currentResourceAmountFromPool rp1 x))) xs
+
 
 let createInPlayCreatureFromCardInstance characterCard inPlayCreatureId =
             {
@@ -276,9 +282,7 @@ let appendCreatureToPlayerBoard inPlayCreature playerBoard =
         | Some a ->
             { playerBoard
                 with Bench
-                    = Option.fold (fun x-> (Some ([ inPlayCreature] @ x)))
-                                  (Some [ inPlayCreature ])
-                                  playerBoard.Bench  }
+                    = Some (Option.fold (fun x y -> x @ y)  [ inPlayCreature ]  playerBoard.Bench)  }
 
 
 let addCreatureToGameState cardInstanceId x playerId gs playerBoard inPlayCreature=
@@ -327,7 +331,7 @@ let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (g
 
                                 Cards = (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)
                           };
-                         TotalResourcePool = addResourcesToPool playerBoard.TotalResourcePool (Map.toSeq rc.ResourcesAdded)
+                         TotalResourcePool = addResourcesToPool playerBoard.TotalResourcePool (Map.toList rc.ResourcesAdded)
                          DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
                 }
               { gs with Boards = (gs.Boards.Add (playerId, newPb)) } |> (applyEffectIfDefinied rc.EnterSpecialEffects) |> Result.bind (applyEffectIfDefinied rc.ExitSpecialEffects)

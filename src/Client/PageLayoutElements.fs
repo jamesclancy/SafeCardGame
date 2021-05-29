@@ -116,7 +116,7 @@ let renderEnemyActiveCreature (inPlayCreature : Option<InPlayCreature>) =
                                   table [ ]
                                     [
                                         yield! seq {
-                                            for a in card.Creature.Attach do
+                                            for a in card.Creature.Attack do
                                                 (renderAttackRow a)
                                         } ] ] ] ] ]
 
@@ -250,7 +250,7 @@ let playerActiveCreature (inPlayCreature : Option<InPlayCreature>) =
                                   table [ ]
                                     [
                                         yield! seq {
-                                            for a in card.Creature.Attach do
+                                            for a in card.Creature.Attack do
                                                 (renderAttackRow a)
                                         } ] ] ]
                           footer [ Class "card-footer" ]
@@ -285,7 +285,7 @@ let playerBenchCreature (inPlayCreature : InPlayCreature)=
                                   table [ ]
                                     [
                                         yield! seq {
-                                            for a in card.Creature.Attach do
+                                            for a in card.Creature.Attack do
                                                 (renderAttackRow a)
                                         } ] ] ] ] ]
 
@@ -361,7 +361,7 @@ let renderCharacterCard (card: CharacterCard) =
                               table [ ]
                                 [
                                   yield! seq {
-                                    for a in card.Creature.Attach do
+                                    for a in card.Creature.Attack do
                                       (renderAttackRow a)
                                   }
                                 ] ] ]

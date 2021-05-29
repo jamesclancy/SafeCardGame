@@ -139,7 +139,7 @@ module Domain =
         {
             Health: int
             Weaknesses: Resource list
-            Attach: Attack list
+            Attack: Attack list
         }
     and Attack =
         {

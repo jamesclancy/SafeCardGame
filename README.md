@@ -1837,3 +1837,129 @@ then I can
 This involved some copy pasta which could be removed and refactored but I am just going to keep driving on for now.
 
 This now just leaves me to complete the play card and attack events.
+
+For the play card action I will need to impliment a variety of functions. These will require refactorng but just to get something down I added
+
+```
+let applyEffectIfDefinied effect gs =
+    match effect with
+    | Some e -> e.Function.Invoke gs |> Ok
+    | None  -> gs |> Ok
+
+let currentResourceAmountFromPool (resourcePool : ResourcePool) (resource : Resource) =
+    match resourcePool.TryGetValue(resource) with
+    | true, t -> t
+    | false, _ -> 0
+
+let rec addResourcesToPool (rp1 : Map<Resource, int>)  rp2 =
+    match rp2 with
+    | [] ->  rp1 |> Map.toSeq |> ResourcePool
+    | [ (x,y) ] ->
+        rp1.Add(x, y + (currentResourceAmountFromPool rp1 x))  |> Map.toSeq |> ResourcePool
+    | (x,y) :: xs  ->
+        addResourcesToPool (rp1.Add(x,  y + (currentResourceAmountFromPool rp1 x))) xs
+
+
+let createInPlayCreatureFromCardInstance characterCard inPlayCreatureId =
+            {
+                InPlayCharacterId=  inPlayCreatureId
+                Card = characterCard
+                CurrentDamage=  0
+                SpecialEffect=  None
+                AttachedEnergy =  Seq.empty |> ResourcePool
+                SpentEnergy = Seq.empty |> ResourcePool
+            } |> Ok
+
+let appendCreatureToPlayerBoard inPlayCreature playerBoard =
+        match playerBoard.ActiveCreature with
+        | None ->
+            { playerBoard with ActiveCreature = Some inPlayCreature }
+        | Some a ->
+            { playerBoard
+                with Bench
+                    = Some (Option.fold (fun x y -> x @ y)  [ inPlayCreature ]  playerBoard.Bench)  }
+
+
+let addCreatureToGameState cardInstanceId x playerId gs playerBoard inPlayCreature=
+        let playerBoard =
+                        {
+                            playerBoard
+                                with Hand =
+                                        {
+                                          playerBoard.Hand with
+                                            Cards = (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)
+                                        };
+                                     DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+                        } |> (appendCreatureToPlayerBoard inPlayCreature)
+
+        { gs with Boards = gs.Boards.Add ( playerId, playerBoard) } |> Ok
+
+let buildInPlayCreatureId idStr =
+    let res = idStr |> NonEmptyString.build
+
+    match res with
+    | Ok r -> InPlayCreatureId r |> Ok
+    | Error e -> Error e
+
+
+let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (gs: GameState) (playerBoard : PlayerBoard) =
+    let cardToDiscard : CardInstance list = List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards
+
+    match cardToDiscard with
+    | [] ->
+        (sprintf "Unable to locate card in hand with card instance id %s" (cardInstanceId.ToString())) |> Error
+    | [ x ] ->
+            match x.Card with
+            | CharacterCard cc ->
+
+              System.Guid.NewGuid().ToString()
+              |> buildInPlayCreatureId
+              |> (Result.bind (createInPlayCreatureFromCardInstance x.Card))
+              |> (Result.bind (addCreatureToGameState cardInstanceId x playerId gs playerBoard))
+              |> (Result.bind  (applyEffectIfDefinied cc.EnterSpecialEffects))
+
+            | ResourceCard rc ->
+              let newPb = {
+                  playerBoard
+                    with Hand =
+                          { playerBoard.Hand with
+
+                                Cards = (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)
+                          };
+                         TotalResourcePool = addResourcesToPool playerBoard.TotalResourcePool (Map.toList rc.ResourcesAdded)
+                         DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+                }
+              { gs with Boards = (gs.Boards.Add (playerId, newPb)) } |> (applyEffectIfDefinied rc.EnterSpecialEffects) |> Result.bind (applyEffectIfDefinied rc.ExitSpecialEffects)
+            | EffectCard ec ->
+              let newPb =  {
+                  playerBoard
+                    with Hand =
+                          { playerBoard.Hand with
+
+                                Cards = (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)
+                          };
+                         DiscardPile = {playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+                }
+              { gs with Boards = (gs.Boards.Add (playerId, newPb) ) } |> (applyEffectIfDefinied ec.EnterSpecialEffects) |> Result.bind (applyEffectIfDefinied ec.ExitSpecialEffects)
+    | _ ->
+        (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
+
+
+let modifyGameStateFromPlayCardEvent (ev: PlayCardEvent) (gs: GameState) =
+    let newBoard =
+        getExistingPlayerBoardFromGameState ev.PlayerId gs
+        |> Result.bind (playCardFromBoard  ev.CardInstanceId ev.PlayerId gs)
+
+    match newBoard with
+    | Ok pb ->
+        pb
+    | Error e ->
+        { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
+
+```
+
+I am leaving the attack logic for later and am now focuses on testing to verify what I have done so far is working.
+
+I am now interested in building a more realistic gamestate for testing.
+
+This is the final commit in the branch `step-8-wire-up-events-to-update-game-step`

@@ -7,8 +7,8 @@ type StartGameEvent =
         GameId: GameId
         Players: Map<PlayerId, Player>
         Decks: Map<PlayerId, Deck>
-        CurrentPlayer:PlayerId
-        OpponentPlayer:PlayerId
+        PlayerOne:PlayerId
+        PlayerTwo:PlayerId
     }
 type DrawCardEvent =
     {
