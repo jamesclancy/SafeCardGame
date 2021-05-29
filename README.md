@@ -1629,10 +1629,10 @@ In the next step/section I will be wiring up the events to actually modify the g
 ### Wire up events to modify GameState
 ---
 
-These update to the gamestate will occur in the update function of the client Index.fs
+These updates to the gamestate will occur in the update function of the client Index.fs
 
 
-First I scofolded out the update function like:
+First I scaffolded out the update function like:
 
 ```
 let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
@@ -1715,9 +1715,9 @@ let intitalizeGameStateFromStartGameEvent (ev : StartGameEvent) =
             }
 
 ```
-Then I just ahve to call intitalizeGameStateFromStartGameEvent from my update swithc statement.
+Then I just have to call intitalizeGameStateFromStartGameEvent from my update match statement.
 
-Using the same draw function I can impement the draw event.
+Using the same draw function I can implement the draw event.
 
 ```
 let appendNotificationMessageToListOrCreateList (existingNotifications : Option<Notification list) (newNotification : string) =
@@ -1740,9 +1740,9 @@ let modifyGameStateFromDrawCardEvent (ev: DrawCardEvent) (gs: GameState) =
         { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages "Unable to lookup player board" }
 ```
 
-I realize there has to be a better way to pipe into a list then `|> (fun y -> y :: nl)` but I am just going to leave that for now.
+I realize there has to be a better way to pipe into a list than `|> (fun y -> y :: nl)` but I am just going to leave that for now.
 
-Discard card is next. I noticed a type in the name `CardInstanceId` so I corrected that. Also, I notice I will similarly have to pull the player board from the state so I should extract that to be a function like:
+Discard card is next. I noticed a typo in the name `CardInstanceId` so I corrected that. Also, I notice I will similarly have to pull the player board from the state so I should extract that to be a function like:
 
 ```
 let getExistingPlayerBoardFromGameState playerId gs =
@@ -1789,7 +1789,7 @@ let modifyGameStateFromDiscardCardEvent (ev: DiscardCardEvent) (gs: GameState) =
 
 ```
 
-The end play step should jsut move the player to the Attack step like:
+The end play step should just move the player to the Attack step like:
 
 ```
     | EndPlayStep ev ->
@@ -1811,7 +1811,7 @@ EndTurn should just move the game to the draw step of the other player.
         { model with CurrentStep = (Draw otherPlayer)}, Cmd.none
 ```
 
-Game Won should transition to the GameOverState, set a winner and a message but I will first have to define a function to format teh GameOverMessage like:
+Game Won should transition to the GameOverState, set a winner and a message but I will first have to define a function to format the GameOverMessage like:
 
 ```
 let formatGameOverMessage (notifications : Option<Notification list>) =
@@ -1834,11 +1834,11 @@ then I can
         { model with CurrentStep = newStep}, Cmd.none
 ```
 
-This involved some copy pasta which could be removed and refactored but I am just going to keep driving on for now.
+This involved some copypasta which could be removed and refactored but I am just going to keep driving on for now.
 
 This now just leaves me to complete the play card and attack events.
 
-For the play card action I will need to impliment a variety of functions. These will require refactorng but just to get something down I added
+For the play card action, I will need to implement a variety of functions. These will require refactoring but just to get something down I added
 
 ```
 let applyEffectIfDefinied effect gs =
