@@ -175,7 +175,7 @@ let yourCurrentStepClasses (gameState : GameState) (gamesStep: GameStep) =
         if gameState.CurrentStep = gamesStep then "button is-danger"
         else "button is-primary"
 
-let currentStepInformation (player: Player) (gameState : GameState) =
+let currentStepInformation (player: Player) (gameState : GameState)  =
     div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
                         [ p [ Class "control" ]

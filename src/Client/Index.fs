@@ -29,46 +29,50 @@ let createPlayer playerIdStr playerName playerCurrentLife playerPlaymatUrl =
     | _ -> Error "Unable to create player"
 
 
-let testCardGenerator cardInstanceIdStr cardIdStr cardImageUrlStr =
+let testCreatureCardGenerator cardInstanceIdStr =
     let cardInstanceId = NonEmptyString.build cardInstanceIdStr |> Result.map CardInstanceId
-    let cardId = NonEmptyString.build cardInstanceIdStr |> Result.map CardId
-    let cardImageUrl = ImageUrlString.build cardImageUrlStr
 
-    match cardInstanceId, cardId, cardImageUrl with
-    | Ok id, Ok cid, Ok imgUrl ->
-        let creature =
-          {
-            Health= 95
-            Weaknesses=  List.empty
-            Attack = List.empty
-          }
-        let card =
-            {
-                CardId = cid
-                ResourceCost = [ Resource.Grass, 4;
-                                 Resource.Colorless, 1 ] |> Seq.ofList |> ResourcePool
-                Name = cardIdStr
-                EnterSpecialEffects = None
-                ExitSpecialEffects = None
-                PrimaryResource = Resource.Grass
-                Creature = creature
-                ImageUrl = imgUrl
-                Description = "A rare creature with stange and powers."
-            }
+    match cardInstanceId with
+    | Ok id ->
+        let card = SampleCardDatabase.creatureCardDb |> CollectionManipulation.shuffleG |> Seq.head
         Ok  {
                 CardInstanceId  =  id
                 Card =  card |> CharacterCard
             }
-    | _, _, _ ->
-        sprintf "Unable to create card instance for %s\t%s" cardInstanceIdStr cardIdStr
+    | _ ->
+        sprintf "Unable to create card instance for %s" cardInstanceIdStr
         |> Error
+
+
+let testResourceCardGenerator cardInstanceIdStr =
+    let cardInstanceId = NonEmptyString.build cardInstanceIdStr |> Result.map CardInstanceId
+
+    match cardInstanceId with
+    | Ok id ->
+        let card = SampleCardDatabase.resourceCardDb |> CollectionManipulation.shuffleG |> Seq.head
+        Ok  {
+                CardInstanceId  =  id
+                Card =  card |> ResourceCard
+            }
+    | _ ->
+        sprintf "Unable to create card instance for %s" cardInstanceIdStr
+        |> Error
+
+let testDeckSeqGenerator (numberOfCards :int) =
+    seq { 0 .. (numberOfCards - 1)}
+    |> Seq.map (fun x ->
+                    if x % 2 = 1 then
+                        testCreatureCardGenerator (sprintf "cardInstance-%i" x)
+                    else
+                        testResourceCardGenerator (sprintf "cardInstance-%i" x)
+                    )
+    |> List.ofSeq
+    |> CollectionManipulation.selectAllOkayResults
 
 let testCardSeqGenerator (numberOfCards : int) =
     seq { 0 .. (numberOfCards - 1) }
-    |> Seq.map (fun x -> testCardGenerator
-                            (sprintf "ExcitingCharacter%i" x)
-                            (sprintf "Exciting Character #%i" x)
-                            (sprintf "https://picsum.photos/320/200?%i" x))
+    |> Seq.map (fun x -> testCreatureCardGenerator
+                            (sprintf "ExcitingCharacter%i" x))
     |> Seq.map (fun x ->
                         match x with
                         | Ok s -> [ s ] |> Ok
@@ -83,7 +87,7 @@ let testCardSeqGenerator (numberOfCards : int) =
 
 let inPlayCreatureGenerator inPlayCreatureIdStr cardInstanceIdStr cardIdStr cardImageUrlStr =
         let inPlayCreatureId = NonEmptyString.build inPlayCreatureIdStr |> Result.map InPlayCreatureId
-        let card = testCardGenerator cardInstanceIdStr cardIdStr cardImageUrlStr
+        let card = testCreatureCardGenerator cardInstanceIdStr
 
         match inPlayCreatureId, card with
         | Ok id, Ok c ->
@@ -376,21 +380,29 @@ let init =
           let model : GameState =
             {
                 GameId = g
+                Players =  Map.empty
+                Boards =   Map.empty
+                NotificationMessages = None
+                CurrentStep =  NotCurrentlyPlaying
+                TurnNumber = 0
+                PlayerOne = p1.PlayerId
+                PlayerTwo = p2.PlayerId
+            }
+
+          let startGameEvent =
+            {
+                GameId = g
                 Players =  [
                             p1.PlayerId, p1;
                             p2.PlayerId, p2
                            ] |> Map.ofList
-                Boards =   [
-                            pb1.PlayerId, pb1;
-                            pb2.PlayerId, pb2
-                           ] |> Map.ofList
-                NotificationMessages = None
-                CurrentStep =  (p1.PlayerId |> Attack)
-                TurnNumber = 1
                 PlayerOne = p1.PlayerId
                 PlayerTwo = p2.PlayerId
-            }
-          let cmd = Cmd.ofMsg GameStarted
+                Decks = [   (p1.PlayerId, { TopCardsExposed = 0; Cards = testDeckSeqGenerator 60 });
+                            (p2.PlayerId, { TopCardsExposed = 0; Cards = testDeckSeqGenerator 60 })]
+                         |> Map.ofSeq
+            } |> StartGame
+          let cmd = Cmd.ofMsg startGameEvent
           Ok (model, cmd)
         | _ -> "Failed to create player boards" |> Error
     | _ -> "Failed to create players" |> Error
