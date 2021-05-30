@@ -2580,9 +2580,9 @@ This all appears to build so I am leave this as the final change in the branch `
 
 ## Adding more realistic cards data and wiring up the Ui to send some events -Continued - the Player Control Center
 
-Now I will try to implement the turn step changes in via conditional buttons in the player controll center.
+Now I will try to implement the turn step changes via conditional buttons in the player control center.
 
-Current a placeholder or these buttons is located in the the `playerControlCenter` function. I will pull out a `stepNavigation` function and rewrite the `playerControlCenter` as
+Currently, a placeholder for these buttons is located in the `playerControlCenter` function. I will pull out a `stepNavigation` function and rewrite the `playerControlCenter` as
 
 ```
 let playerControlCenter  (player : Player) playerBoard gameState dispatch =
@@ -2682,4 +2682,8 @@ let modifyGameStateFromDrawCardEvent (ev: DrawCardEvent) (gs: GameState) =
         | Error e -> { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
 ```
 
-Refreshing teh site I am not able to click through all the steps of my turn!
+Refreshing the site I am not able to click through all the steps of my turn!
+
+I am leaving this as the final commit of branch `step-10-better-sample-data-and-wiring-up-ui-cont`.
+
+
