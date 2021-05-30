@@ -166,7 +166,11 @@ module Domain =
         | Attack of PlayerId
         | Reconcile of PlayerId
         | GameOver of GameOverStep
-    and Notification = Notification of string
+    and Notification =
+        {
+            Id: Guid
+            Content: string
+        }
     and GameState =
         {
             GameId: GameId
@@ -204,6 +208,7 @@ module Domain =
     let extractNeededModelsFromState (model: GameState) =
         opponentPlayer model, opponentPlayerBoard model, currentPlayer model, currentPlayerBoard model
 
+    let createNotification message ={Id = Guid.NewGuid(); Content = message}
 
     let getSymbolForResource resource =
         match resource with

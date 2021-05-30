@@ -2160,3 +2160,417 @@ let init =
         | _ -> "Failed to create player boards" |> Error
     | _ -> "Failed to create players" |> Error
 ```
+
+I am able to see that the application does in fact now compile and renders the correct more realistic hands.
+
+I am now able to try to wire up some functionality.
+
+The first action I will try to implement is the "discard card" functionality on the discard button.
+
+To do this I will need to wire up the OnClick functionality on the button.
+
+I will wire it up by having this OnClick be a lamda sending a discard Msg like:
+
+```
+let renderCardInstanceForHand  (dispatch : Msg -> unit)  gameId playerId (card: CardInstance) =
+    div [ Class "column is-4" ]
+          [ div [ Class "card" ]
+             [   yield! (renderCardForHand card.Card)
+                 yield   footer [ Class "card-footer" ]
+                      [ a [ Href "#"
+                            Class "card-footer-item" ]
+                          [ str "Play" ]
+                        a [ Href "#"
+                            OnClick (fun _->
+                                            ({
+                                                GameId = gameId
+                                                PlayerId = playerId
+                                                CardInstanceId = card.CardInstanceId
+                                            } : DiscardCardEvent) |> DiscardCard |>  dispatch)
+                            Class "card-footer-item" ]
+                          [ str "Discard" ] ] ] ]
+
+```
+
+To modify the renderCardInstance like this I had to alter the function to render the card frame and card footer as apposed to the renderCardForHand.
+
+I did this changing the renderCardForHand like:
+
+```
+let renderCharacterCard (card: CharacterCard) =
+     [
+             header [ Class "card-header" ]
+                        [ p [ Class "card-header-title" ]
+                            [ str card.Name ]
+                          p [ Class "card-header-icon" ]
+                            [ str (textDescriptionForResourcePool card.ResourceCost) ] ]
+             div [ Class "card-image" ]
+                        [ figure [ Class "image is-4by3" ]
+                            [ img [ Src (card.ImageUrl.ToString())
+                                    Alt card.Name
+                                    Class "is-fullwidth" ] ] ]
+             div [ Class "card-content" ]
+                        [ div [ Class "content" ]
+                            [ p [ Class "is-italic" ]
+                                [ str card.Description ]
+                              displayCardSpecialEffectDetailIfPresent "On Enter Playing Field" card.EnterSpecialEffects
+                              displayCardSpecialEffectDetailIfPresent "On Exit Playing Field" card.ExitSpecialEffects
+                              h5 [ Class "IsTitle is5" ]
+                                [ str "Attacks" ]
+                              table [ ]
+                                [
+                                  yield! seq {
+                                    for a in card.Creature.Attack do
+                                      (renderAttackRow a)
+                                  }
+                                ] ] ]
+                                ]
+
+let renderCardForHand (card: Card) : ReactElement list=
+    match card with
+    | CharacterCard c -> renderCharacterCard c
+    | _ ->
+         [
+            strong [] [ str "IDK" ]
+         ]
+```
+
+I am not able to click the discard button but it doesn't function as expected! It is discarding all the cards other then the desired card!
+
+I now have to fix the behavior of the `discardCardFromBoard` function. I have found that the bug lies in the filter on the Hand being ` (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)` and not ` (List.filter (fun x -> x.CardInstanceId <> cardInstanceId) playerBoard.Hand.Cards)`. Scanning through the code I will also have to update the similar funcationality in `addCreatureToGameState` and `playCardFromBoard`. (the fact that I had to update this logic is a real sign I need to refactor but I am ignoring this for now).
+
+I reload the webpage and discard appears to be correctly functioning.
+
+Now I can similarly implement the play card functionality by altering the
+
+Refreshing the browser, nothing happens when I click play.
+
+The first thing I did was add a notification area to the page to see if their was an error message like:
+
+```
+let notificationArea (messages :Option<Notification list>) =
+    match messages with
+    | Some s ->
+        div []
+            [
+               yield!  Seq.map (fun x -> div [Class "notification is-danger"] [ str (x.ToString()) ]) s
+            ]
+    | _ ->
+        div [] []
+
+let mainLayout  model dispatch =
+  match extractNeededModelsFromState model with
+  | Ok op, Ok opb, Ok cp, Ok cpb ->
+      div [ Class "container is-fluid" ]
+        [ topNavigation
+          br [ ]
+          br [ ]
+          enemyStats op opb
+          enemyCreatures op opb
+          playerControlCenter cp cpb model
+          notificationArea model.NotificationMessages
+          playerCreatures cp cpb
+          playerHand model.GameId cp.PlayerId cpb.Hand dispatch
+          footerBand
+        ]
+  | _ -> strong [] [ str "Error in GameState encountered." ]
+```
+
+After poking around for a while I realized this was never wired up at all. In the update function I updated the
+```
+    | PlayCard ev ->
+        model, Cmd.none
+```
+to
+```
+    | PlayCard ev ->
+        modifyGameStateFromPlayCardEvent ev model, Cmd.none
+```
+
+Now it appears to be adding the creatures to the play field. One thing that needs to be added to the UI is the total and available resources.
+
+To do this I modified the `playerStats` function on the PageLayoutElements to include the resources like:
+
+```
+let playerStats  (player: Player) (playerBoard: PlayerBoard) =
+    [             div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "💓 %i/10" player.RemainingLifePoints) ] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "🤚 %i" playerBoard.Hand.Cards.Length) ] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "🂠 %i" playerBoard.Deck.Cards.Length) ] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "🗑️ %i" playerBoard.DiscardPile.Cards.Length)] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "Total Res: %s" (textDescriptionForResourcePool playerBoard.TotalResourcePool))] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "Avail Res: %s" (textDescriptionForResourcePool playerBoard.AvailableResourcePool))] ] ]
+```
+
+I can now see the resources and see that the total resources are modifing but not the available so I will need to update the `playCardFromBoard` function on index like:
+
+```
+let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (gs: GameState) (playerBoard : PlayerBoard) =
+    let cardToDiscard : CardInstance list = List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards
+
+    match cardToDiscard with
+    | [] ->
+        (sprintf "Unable to locate card in hand with card instance id %s" (cardInstanceId.ToString())) |> Error
+    | [ x ] ->
+            match x.Card with
+            | CharacterCard cc ->
+
+              System.Guid.NewGuid().ToString()
+              |> buildInPlayCreatureId
+              |> (Result.bind (createInPlayCreatureFromCardInstance x.Card))
+              |> (Result.bind (addCreatureToGameState cardInstanceId x playerId gs playerBoard))
+              |> (Result.bind  (applyEffectIfDefinied cc.EnterSpecialEffects))
+
+            | ResourceCard rc ->
+              let newPb = {
+                  playerBoard
+                    with Hand =
+                          { playerBoard.Hand with
+
+                                Cards = (List.filter (fun x -> x.CardInstanceId <> cardInstanceId) playerBoard.Hand.Cards)
+                          };
+                         TotalResourcePool = addResourcesToPool playerBoard.TotalResourcePool (Map.toList rc.ResourcesAdded)
+                         AvailableResourcePool =
+                            if rc.ResourceAvailableOnFirstTurn then
+                                addResourcesToPool playerBoard.AvailableResourcePool (Map.toList rc.ResourcesAdded)
+                            else playerBoard.AvailableResourcePool
+                         DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+                }
+              { gs with Boards = (gs.Boards.Add (playerId, newPb)) } |> (applyEffectIfDefinied rc.EnterSpecialEffects) |> Result.bind (applyEffectIfDefinied rc.ExitSpecialEffects)
+            | EffectCard ec ->
+              let newPb =  {
+                  playerBoard
+                    with Hand =
+                          { playerBoard.Hand with
+
+                                Cards = (List.filter (fun x -> x.CardInstanceId <> cardInstanceId) playerBoard.Hand.Cards)
+                          };
+                         DiscardPile = {playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+                }
+              { gs with Boards = (gs.Boards.Add (playerId, newPb) ) } |> (applyEffectIfDefinied ec.EnterSpecialEffects) |> Result.bind (applyEffectIfDefinied ec.ExitSpecialEffects)
+    | _ ->
+        (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
+```
+
+With both the total and availablepopulating the layout completely breaks so I put these two values on top of each other. This looks bad but is functional for the moment:
+
+```
+...
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "Tot %s" (textDescriptionForResourcePool playerBoard.TotalResourcePool))
+                          br []
+                          str (sprintf "Ava %s" (textDescriptionForResourcePool playerBoard.AvailableResourcePool))] ] ]
+...
+```
+I now notice that I am able to play cards for which I don't havw the resources as well as my available resources are not being decremented.
+
+To implement this I had to create a number of functions and rewrite the play logic to take this into account like:
+
+```
+
+let getNeededResourcesForCard card =
+    match card with
+    | CharacterCard cc -> cc.ResourceCost
+    | ResourceCard rc -> rc.ResourceCost
+    | EffectCard ec -> ec.ResourceCost
+
+let tryRemoveResourceFromPlayerBoard (playerBoard:PlayerBoard) x y =
+    match playerBoard.AvailableResourcePool.TryGetValue(x) with
+    | true, z when z >= y -> Ok {playerBoard with AvailableResourcePool = (addResourcesToPool playerBoard.AvailableResourcePool  [ (x,  y) ])  }
+    | _, _ -> sprintf "Not enough %s" (getSymbolForResource x) |> Error
+
+let rec decrementResourcesFromPlayerBoard playerBoard resourcePool =
+    match resourcePool with
+    | [] -> Ok playerBoard
+    | [ (x, y) ] -> tryRemoveResourceFromPlayerBoard playerBoard x y
+    | (x, y) :: xs ->
+        match tryRemoveResourceFromPlayerBoard playerBoard x y with
+        | Error e -> e |> Error
+        | Ok pb -> decrementResourcesFromPlayerBoard pb xs
+
+
+let decrementRequiredResourcesFromModel cardToDiscard (playerId : PlayerId) (gs: GameState) (playerBoard : PlayerBoard) =
+     getNeededResourcesForCard cardToDiscard
+     |> Map.toList
+     |> decrementResourcesFromPlayerBoard playerBoard
+     |> Result.bind (fun updatedPlayerBoard -> Ok {gs with Boards = gs.Boards.Add(playerId, updatedPlayerBoard) })
+
+
+let playCardFromBoardImp cardInstanceId playerId playerBoard (x : CardInstance) cardToDiscard gs =
+    match x.Card with
+               | CharacterCard cc ->
+
+                 System.Guid.NewGuid().ToString()
+                 |> buildInPlayCreatureId
+                 |> (Result.bind (createInPlayCreatureFromCardInstance x.Card))
+                 |> (Result.bind (addCreatureToGameState cardInstanceId x playerId gs playerBoard))
+                 |> (Result.bind  (applyEffectIfDefinied cc.EnterSpecialEffects))
+
+               | ResourceCard rc ->
+                 let newAvailResourcePool =
+                               if rc.ResourceAvailableOnFirstTurn then
+                                   addResourcesToPool playerBoard.AvailableResourcePool (Map.toList rc.ResourcesAdded)
+                               else
+                                   playerBoard.AvailableResourcePool
+                 let newPb = {
+                     playerBoard
+                       with Hand =
+                             {
+                               playerBoard.Hand with
+                                   Cards = (List.filter (fun x -> x.CardInstanceId <> cardInstanceId) playerBoard.Hand.Cards)
+                             }
+                            TotalResourcePool = addResourcesToPool playerBoard.TotalResourcePool (Map.toList rc.ResourcesAdded)
+                            AvailableResourcePool = newAvailResourcePool
+                            DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+                   }
+                 { gs with Boards = (gs.Boards.Add (playerId, newPb)) } |> (applyEffectIfDefinied rc.EnterSpecialEffects) |> Result.bind (applyEffectIfDefinied rc.ExitSpecialEffects)
+               | EffectCard ec ->
+                 let newPb =  {
+                     playerBoard
+                       with Hand =
+                             { playerBoard.Hand with
+
+                                   Cards = (List.filter (fun x -> x.CardInstanceId <> cardInstanceId) playerBoard.Hand.Cards)
+                             };
+                            DiscardPile = {playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
+                   }
+                 { gs with Boards = (gs.Boards.Add (playerId, newPb) ) } |> (applyEffectIfDefinied ec.EnterSpecialEffects) |> Result.bind (applyEffectIfDefinied ec.ExitSpecialEffects)
+
+
+let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (gs: GameState) (playerBoard : PlayerBoard) =
+    let cardToDiscard : CardInstance list = List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards
+
+    match cardToDiscard with
+    | [] ->
+        (sprintf "Unable to locate card in hand with card instance id %s" (cardInstanceId.ToString())) |> Error
+    | [ x ] ->
+        decrementRequiredResourcesFromModel x.Card playerId gs playerBoard
+        |> Result.bind (playCardFromBoardImp cardInstanceId playerId playerBoard x cardToDiscard)
+    | _ ->
+        (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
+```
+
+From a testing standpoint the lack of rendering the resource cards has become quite difficult to deal with so I have added a simple rendering for the resource cards:
+
+```
+
+let renderResourceCard (card: ResourceCard) =
+    [
+            header [ Class "card-header" ]
+                       [ p [ Class "card-header-title" ]
+                           [ str card.Name ]
+                         p [ Class "card-header-icon" ]
+                           [ str (textDescriptionForResourcePool card.ResourceCost) ] ]
+            div [ Class "card-image" ]
+                       [ figure [ Class "image is-4by3" ]
+                           [ img [ Src (card.ImageUrl.ToString())
+                                   Alt card.Name
+                                   Class "is-fullwidth" ] ] ]
+            div [ Class "card-content" ]
+                       [ div [ Class "content" ]
+                           [ p [ Class "is-italic" ]
+                               [ str card.Description ]
+                             displayCardSpecialEffectDetailIfPresent "On Enter Playing Field" card.EnterSpecialEffects
+                             displayCardSpecialEffectDetailIfPresent "On Exit Playing Field" card.ExitSpecialEffects
+                           ] ] ]
+
+
+let renderCardForHand (card: Card) : ReactElement list=
+    match card with
+    | CharacterCard c -> renderCharacterCard c
+    | ResourceCard rc -> renderResourceCard rc
+    | _ ->
+         [
+            strong [] [ str "IDK" ]
+         ]
+```
+
+
+One thing I have realized is that I need to add functionality to remove old notifications. To do this I will need to add an id to the `Notification`s, define an Msg `DeleteNotification` which removes the notification with a specified id. Then I will add a delete button the to UI which sends a `DeleteNotification` message.
+
+The UI update will be:
+```
+let notificationArea (messages :Option<Notification list>) dispatch=
+    match messages with
+    | Some s ->
+        div []
+            [
+               yield!  Seq.map (fun x -> div [Class "notification is-danger"] [
+                                                    button [ Class "delete"
+                                                             OnClick (fun y -> x.Id |> DeleteNotification |> dispatch)
+                                                            ] []
+                                                    str x.Content ]) s
+            ]
+    | _ ->
+        div [] []
+```
+
+The domain update to the notification will be:
+```
+    ...
+    and Notification =
+        {
+            Id: Guid
+            Content: string
+        }
+    ...
+
+    let createNotification message ={Id = Guid.NewGuid(); Content = message}
+```
+
+The Msg type I also updated to remove the outdated GameStarted type:
+
+```
+type Msg =
+    | StartGame of StartGameEvent
+    | DrawCard of DrawCardEvent
+    | DiscardCard of DiscardCardEvent
+    | PlayCard of PlayCardEvent
+    | EndPlayStep of EndPlayStepEvent
+    | PerformAttack of PerformAttackEvent
+    | SkipAttack of SkipAttackEvent
+    | EndTurn of EndTurnEvent
+    | DeleteNotification of Guid
+    | GameWon of GameWonEvent
+```
+
+I can then update `update` to include the new event
+```
+    | DeleteNotification dn ->
+        removeNotification model dn, Cmd.none
+```
+
+and define `removeNotification` as
+
+```
+let filterNotificationList notificationId l =
+    l |> List.filter (fun x -> x.Id <> notificationId)
+    |> function
+        | [] -> None
+        | x -> Some x
+
+let removeNotification gs notificationId =
+   { gs with NotificationMessages = match gs.NotificationMessages with
+                                    | Some x -> filterNotificationList notificationId x
+                                    | None -> None
+   }
+```

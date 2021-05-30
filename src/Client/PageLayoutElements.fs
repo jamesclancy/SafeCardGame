@@ -6,6 +6,7 @@ open Fable.React.Props
 open Fulma
 open Shared.Domain
 open GeneralUIHelpers
+open Events
 
 
 let topNavigation =
@@ -75,7 +76,13 @@ let playerStats  (player: Player) (playerBoard: PlayerBoard) =
                   div [ Class "navbar-item" ]
                     [ a [ Class "button is-primary"
                           Href "#" ]
-                        [ str (sprintf "🗑️ %i" playerBoard.DiscardPile.Cards.Length)] ] ]
+                        [ str (sprintf "🗑️ %i" playerBoard.DiscardPile.Cards.Length)] ]
+                  div [ Class "navbar-item" ]
+                    [ a [ Class "button is-primary"
+                          Href "#" ]
+                        [ str (sprintf "Tot %s" (textDescriptionForResourcePool playerBoard.TotalResourcePool))
+                          br [] 
+                          str (sprintf "Ava %s" (textDescriptionForResourcePool playerBoard.AvailableResourcePool))] ] ]
 
 let enemyStats (player: Player) (playerBoard: PlayerBoard) =
   nav [ Class "navbar is-fullwidth is-danger" ]
@@ -338,19 +345,18 @@ let displayCardSpecialEffectDetailIfPresent title (value : Option<GameStateSpeci
     | None -> span [] []
 
 let renderCharacterCard (card: CharacterCard) =
-      div [ Class "column is-4" ]
-                [ div [ Class "card" ]
-                    [ header [ Class "card-header" ]
+     [
+             header [ Class "card-header" ]
                         [ p [ Class "card-header-title" ]
                             [ str card.Name ]
                           p [ Class "card-header-icon" ]
                             [ str (textDescriptionForResourcePool card.ResourceCost) ] ]
-                      div [ Class "card-image" ]
+             div [ Class "card-image" ]
                         [ figure [ Class "image is-4by3" ]
                             [ img [ Src (card.ImageUrl.ToString())
                                     Alt card.Name
                                     Class "is-fullwidth" ] ] ]
-                      div [ Class "card-content" ]
+             div [ Class "card-content" ]
                         [ div [ Class "content" ]
                             [ p [ Class "is-italic" ]
                                 [ str card.Description ]
@@ -365,30 +371,70 @@ let renderCharacterCard (card: CharacterCard) =
                                       (renderAttackRow a)
                                   }
                                 ] ] ]
-                      footer [ Class "card-footer" ]
-                        [ a [ Href "#"
-                              Class "card-footer-item" ]
-                            [ str "Play" ]
-                          a [ Href "#"
-                              Class "card-footer-item" ]
-                            [ str "Discard" ] ] ] ]
+                                ]
 
-let renderCardForHand (card: Card) =
+
+let renderResourceCard (card: ResourceCard) =
+    [
+            header [ Class "card-header" ]
+                       [ p [ Class "card-header-title" ]
+                           [ str card.Name ]
+                         p [ Class "card-header-icon" ]
+                           [ str (textDescriptionForResourcePool card.ResourceCost) ] ]
+            div [ Class "card-image" ]
+                       [ figure [ Class "image is-4by3" ]
+                           [ img [ Src (card.ImageUrl.ToString())
+                                   Alt card.Name
+                                   Class "is-fullwidth" ] ] ]
+            div [ Class "card-content" ]
+                       [ div [ Class "content" ]
+                           [ p [ Class "is-italic" ]
+                               [ str card.Description ]
+                             displayCardSpecialEffectDetailIfPresent "On Enter Playing Field" card.EnterSpecialEffects
+                             displayCardSpecialEffectDetailIfPresent "On Exit Playing Field" card.ExitSpecialEffects
+                           ] ] ]
+
+
+let renderCardForHand (card: Card) : ReactElement list=
     match card with
     | CharacterCard c -> renderCharacterCard c
+    | ResourceCard rc -> renderResourceCard rc
     | _ ->
-        strong [] [ str "IDK" ]
+         [
+            strong [] [ str "IDK" ]
+         ]
 
-let renderCardInstanceForHand (card: CardInstance) =
-    renderCardForHand card.Card
+let renderCardInstanceForHand  (dispatch : Msg -> unit)  gameId playerId (card: CardInstance) =
+    div [ Class "column is-4" ]
+          [ div [ Class "card" ]
+             [   yield! (renderCardForHand card.Card)
+                 yield   footer [ Class "card-footer" ]
+                      [ button [ 
+                            OnClick (fun _->
+                                            ({
+                                                GameId = gameId
+                                                PlayerId = playerId
+                                                CardInstanceId = card.CardInstanceId
+                                            } : PlayCardEvent) |> PlayCard |>  dispatch)
+                            Class "card-footer-item" ]
+                          [ str "Play" ]
+                        button [ 
+                            OnClick (fun _->
+                                            ({
+                                                GameId = gameId
+                                                PlayerId = playerId
+                                                CardInstanceId = card.CardInstanceId
+                                            } : DiscardCardEvent) |> DiscardCard |>  dispatch)
+                            Class "card-footer-item" ]
+                          [ str "Discard" ] ] ] ]
 
-let playerHand (hand : Hand) =
+let playerHand  gameId playerId (hand : Hand)  (dispatch : Msg -> unit)=
   section [ Class "section" ]
     [ div [ Class "container py-4" ]
         [ h3 [ Class "title is-spaced is-4" ]
             [ str "Hand" ]
           div [ Class "columns is-mobile mb-5" ]
-            [ yield! Seq.map renderCardInstanceForHand hand.Cards ] ] ]
+            [ yield! Seq.map (renderCardInstanceForHand dispatch  gameId playerId ) hand.Cards ] ] ]
 
 let footerBand =
   footer [ Class "footer" ]
@@ -429,6 +475,20 @@ let footerBand =
                 [ p [ Class "subtitle is-6" ]
                     [ str "© ??" ] ] ] ] ]
 
+let notificationArea (messages :Option<Notification list>) dispatch=
+    match messages with
+    | Some s ->
+        div []
+            [
+               yield!  Seq.map (fun x -> div [Class "notification is-danger"] [
+                                                    button [ Class "delete"
+                                                             OnClick (fun y -> x.Id |> DeleteNotification |> dispatch)
+                                                            ] []
+                                                    str x.Content ]) s
+            ]
+    | _ ->
+        div [] []
+
 let mainLayout  model dispatch =
   match extractNeededModelsFromState model with
   | Ok op, Ok opb, Ok cp, Ok cpb ->
@@ -439,8 +499,9 @@ let mainLayout  model dispatch =
           enemyStats op opb
           enemyCreatures op opb
           playerControlCenter cp cpb model
+          notificationArea model.NotificationMessages dispatch
           playerCreatures cp cpb
-          playerHand cpb.Hand
+          playerHand model.GameId cp.PlayerId cpb.Hand dispatch
           footerBand
         ]
   | _ -> strong [] [ str "Error in GameState encountered." ]

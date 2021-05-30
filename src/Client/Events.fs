@@ -1,6 +1,7 @@
 module Events
 
 open Shared.Domain
+open System
 
 type StartGameEvent =
     {
@@ -57,7 +58,6 @@ type GameWonEvent =
     }
 
 type Msg =
-    | GameStarted
     | StartGame of StartGameEvent
     | DrawCard of DrawCardEvent
     | DiscardCard of DiscardCardEvent
@@ -66,4 +66,5 @@ type Msg =
     | PerformAttack of PerformAttackEvent
     | SkipAttack of SkipAttackEvent
     | EndTurn of EndTurnEvent
+    | DeleteNotification of Guid
     | GameWon of GameWonEvent
