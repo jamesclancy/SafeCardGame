@@ -2169,7 +2169,7 @@ The first action I will try to implement is the "discard card" functionality on 
 
 To do this I will need to wire up the OnClick functionality on the button.
 
-I will wire it up by having this OnClick be a lamda sending a discard Msg like:
+I will wire it up by having this OnClick be a lambda sending a discard Msg like:
 
 ```
 let renderCardInstanceForHand  (dispatch : Msg -> unit)  gameId playerId (card: CardInstance) =
@@ -2192,9 +2192,9 @@ let renderCardInstanceForHand  (dispatch : Msg -> unit)  gameId playerId (card: 
 
 ```
 
-To modify the renderCardInstance like this I had to alter the function to render the card frame and card footer as apposed to the renderCardForHand.
+To modify the renderCardInstance like this I had to alter the function to render the card frame and card footer as opposed to the renderCardForHand.
 
-I did this changing the renderCardForHand like:
+I did this by changing the renderCardForHand like:
 
 ```
 let renderCharacterCard (card: CharacterCard) =
@@ -2235,7 +2235,7 @@ let renderCardForHand (card: Card) : ReactElement list=
          ]
 ```
 
-I am not able to click the discard button but it doesn't function as expected! It is discarding all the cards other then the desired card!
+I am not able to click the discard button but it doesn't function as expected! It is discarding all the cards other than the desired card!
 
 I now have to fix the behavior of the `discardCardFromBoard` function. I have found that the bug lies in the filter on the Hand being ` (List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards)` and not ` (List.filter (fun x -> x.CardInstanceId <> cardInstanceId) playerBoard.Hand.Cards)`. Scanning through the code I will also have to update the similar funcationality in `addCreatureToGameState` and `playCardFromBoard`. (the fact that I had to update this logic is a real sign I need to refactor but I am ignoring this for now).
 
@@ -2245,7 +2245,7 @@ Now I can similarly implement the play card functionality by altering the
 
 Refreshing the browser, nothing happens when I click play.
 
-The first thing I did was add a notification area to the page to see if their was an error message like:
+The first thing I did was add a notification area to the page to see if there was an error message like:
 
 ```
 let notificationArea (messages :Option<Notification list>) =
@@ -2276,7 +2276,7 @@ let mainLayout  model dispatch =
   | _ -> strong [] [ str "Error in GameState encountered." ]
 ```
 
-After poking around for a while I realized this was never wired up at all. In the update function I updated the
+After poking around for a while I realized this was never wired up at all. In the update function, I updated the
 ```
     | PlayCard ev ->
         model, Cmd.none
@@ -2287,7 +2287,7 @@ to
         modifyGameStateFromPlayCardEvent ev model, Cmd.none
 ```
 
-Now it appears to be adding the creatures to the play field. One thing that needs to be added to the UI is the total and available resources.
+Now it appears to be adding the creatures to the playfield. One thing that needs to be added to the UI is the total and available resources.
 
 To do this I modified the `playerStats` function on the PageLayoutElements to include the resources like:
 
@@ -2319,7 +2319,7 @@ let playerStats  (player: Player) (playerBoard: PlayerBoard) =
                         [ str (sprintf "Avail Res: %s" (textDescriptionForResourcePool playerBoard.AvailableResourcePool))] ] ]
 ```
 
-I can now see the resources and see that the total resources are modifing but not the available so I will need to update the `playCardFromBoard` function on index like:
+I can now see the resources and see that the total resources are modifying but not available so I will need to update the `playCardFromBoard` function on index like:
 
 ```
 let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (gs: GameState) (playerBoard : PlayerBoard) =
@@ -2369,7 +2369,7 @@ let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (g
         (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
 ```
 
-With both the total and availablepopulating the layout completely breaks so I put these two values on top of each other. This looks bad but is functional for the moment:
+With both the total and available populating the layout completely breaks so I put these two values on top of each other. This looks bad but is functional for the moment:
 
 ```
 ...
@@ -2381,7 +2381,7 @@ With both the total and availablepopulating the layout completely breaks so I pu
                           str (sprintf "Ava %s" (textDescriptionForResourcePool playerBoard.AvailableResourcePool))] ] ]
 ...
 ```
-I now notice that I am able to play cards for which I don't havw the resources as well as my available resources are not being decremented.
+I now notice that I am able to play cards for which I don't have the resources, as well as my available resources, are not being decremented.
 
 To implement this I had to create a number of functions and rewrite the play logic to take this into account like:
 
@@ -2469,7 +2469,7 @@ let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (g
         (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
 ```
 
-From a testing standpoint the lack of rendering the resource cards has become quite difficult to deal with so I have added a simple rendering for the resource cards:
+From a testing standpoint, the lack of rendering the resource cards has become quite difficult to deal with so I have added a simple rendering for the resource cards:
 
 ```
 
@@ -2505,7 +2505,7 @@ let renderCardForHand (card: Card) : ReactElement list=
 ```
 
 
-One thing I have realized is that I need to add functionality to remove old notifications. To do this I will need to add an id to the `Notification`s, define an Msg `DeleteNotification` which removes the notification with a specified id. Then I will add a delete button the to UI which sends a `DeleteNotification` message.
+One thing I have realized is that I need to add functionality to remove old notifications. To do this I will need to add an id to the `Notification`s, define a Msg `DeleteNotification` which removes the notification with a specified id. Then I will add a delete button the to UI which sends a `DeleteNotification` message.
 
 The UI update will be:
 ```
@@ -2574,3 +2574,6 @@ let removeNotification gs notificationId =
                                     | None -> None
    }
 ```
+
+This all appears to build so I am leave this as the final change in the branch `step-9-better-sample-data-and-wiring-up-ui`.
+
