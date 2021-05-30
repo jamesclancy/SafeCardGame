@@ -81,7 +81,7 @@ let playerStats  (player: Player) (playerBoard: PlayerBoard) =
                     [ a [ Class "button is-primary"
                           Href "#" ]
                         [ str (sprintf "Tot %s" (textDescriptionForResourcePool playerBoard.TotalResourcePool))
-                          br [] 
+                          br []
                           str (sprintf "Ava %s" (textDescriptionForResourcePool playerBoard.AvailableResourcePool))] ] ]
 
 let enemyStats (player: Player) (playerBoard: PlayerBoard) =
@@ -206,7 +206,57 @@ let currentStepInformation (player: Player) (gameState : GameState)  =
                                 [ span [ ]
                                     [ str "Reconcile" ] ] ] ] ]
 
-let playerControlCenter  (player: Player) (playerBoard: PlayerBoard) (gameState : GameState) =
+
+let renderStepOptionButton dispatch buttonText classType message =
+                        p [ Class "control" ]
+                            [ button [
+                                Class (sprintf "button %s is-large" classType)
+                                OnClick  (fun _-> (message |>  dispatch))
+                                ]
+                                [ span [ ]
+                                    [ str buttonText ] ] ]
+
+let stepNavigation  (player: Player) (playerBoard: PlayerBoard) (gameState : GameState) dispatch =
+    match gameState.CurrentStep with
+    |  GameStep.Draw d when d = player.PlayerId ->
+            div [ Class "navbar-item" ]
+                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
+                        [
+                            (renderStepOptionButton dispatch "Draw" "is-warning" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : DrawCardEvent) |> DrawCard) )
+                            ] ]
+    |  GameStep.Play d when d = player.PlayerId ->
+            div [ Class "navbar-item" ]
+                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
+                        [
+                            (renderStepOptionButton dispatch "End Play" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndPlayStepEvent) |> EndPlayStep) )
+                            ] ]
+    |  GameStep.Attack d when d = player.PlayerId ->
+            div [ Class "navbar-item" ]
+                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
+                        [
+                            (renderStepOptionButton dispatch "Skip Attack" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : SkipAttackEvent) |> SkipAttack) )
+                        ] ]
+    |  GameStep.Reconcile d when d = player.PlayerId ->
+            div [ Class "navbar-item" ]
+                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
+                        [
+                            (renderStepOptionButton dispatch "End Turn" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndTurnEvent) |> EndTurn) )
+                        ] ]
+    |  GameStep.NotCurrentlyPlaying ->
+            div [ Class "navbar-item" ]
+                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
+                        [
+                            (renderStepOptionButton dispatch "Start New Game" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndTurnEvent) |> EndTurn) )
+                        ] ]
+    |  GameStep.GameOver g ->
+            div [ Class "navbar-item" ]
+                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
+                        [
+                            (renderStepOptionButton dispatch "Start New Game" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndTurnEvent) |> EndTurn) )
+                        ] ]
+    | _ -> div [] []
+
+let playerControlCenter  (player : Player) playerBoard gameState dispatch =
   nav [ Class "navbar is-fullwidth is-primary" ]
     [ div [ Class "container" ]
         [ div [ Class "navbar-brand" ]
@@ -218,16 +268,7 @@ let playerControlCenter  (player: Player) (playerBoard: PlayerBoard) (gameState 
                 [ yield! playerStats player playerBoard
                   currentStepInformation player gameState ]
               div [ Class "navbar-end" ]
-                [ div [ Class "navbar-item" ]
-                    [ div [ Class "field is-grouped has-addons is-grouped-right" ]
-                        [ p [ Class "control" ]
-                            [ button [ Class "button is-success is-large" ]
-                                [ span [ ]
-                                    [ str "Attack" ] ] ]
-                          p [ Class "control" ]
-                            [ button [ Class "button is-warning is-large" ]
-                                [ span [ ]
-                                    [ str "Skip Step" ] ] ] ] ] ] ] ] ]
+                [ stepNavigation player playerBoard gameState dispatch ] ] ] ]
 
 let playerActiveCreature (inPlayCreature : Option<InPlayCreature>) =
   match (Option.map (fun x -> (x, x.Card)) inPlayCreature) with
@@ -409,7 +450,7 @@ let renderCardInstanceForHand  (dispatch : Msg -> unit)  gameId playerId (card: 
           [ div [ Class "card" ]
              [   yield! (renderCardForHand card.Card)
                  yield   footer [ Class "card-footer" ]
-                      [ button [ 
+                      [ button [
                             OnClick (fun _->
                                             ({
                                                 GameId = gameId
@@ -418,7 +459,7 @@ let renderCardInstanceForHand  (dispatch : Msg -> unit)  gameId playerId (card: 
                                             } : PlayCardEvent) |> PlayCard |>  dispatch)
                             Class "card-footer-item" ]
                           [ str "Play" ]
-                        button [ 
+                        button [
                             OnClick (fun _->
                                             ({
                                                 GameId = gameId
@@ -498,7 +539,7 @@ let mainLayout  model dispatch =
           br [ ]
           enemyStats op opb
           enemyCreatures op opb
-          playerControlCenter cp cpb model
+          playerControlCenter cp cpb model dispatch
           notificationArea model.NotificationMessages dispatch
           playerCreatures cp cpb
           playerHand model.GameId cp.PlayerId cpb.Hand dispatch
