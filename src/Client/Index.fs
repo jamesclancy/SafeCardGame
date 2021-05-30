@@ -232,13 +232,25 @@ let getExistingPlayerBoardFromGameState playerId gs =
     | false, _ ->
         (sprintf "Unable to locate player board for player id %s" (playerId.ToString())) |> Error
 
+let migrateGameStateToNewStep newStep (gs: GameState) =
+    // maybe some vaidation could go here?
+    Ok {
+        gs with CurrentStep = newStep
+    }
+
+let moveCardsFromDeckToHand gs playerId pb =
+    let newDeck, newHand =  drawCardsFromDeck 1 pb.Deck pb.Hand
+    Ok { gs with Boards = (gs.Boards.Add (playerId, { pb with Deck = newDeck; Hand = newHand })  ) }
+
+
 let modifyGameStateFromDrawCardEvent (ev: DrawCardEvent) (gs: GameState) =
-    match getExistingPlayerBoardFromGameState ev.PlayerId gs with
-    | Ok pb ->
-        let newDeck, newHand =  drawCardsFromDeck 1 pb.Deck pb.Hand
-        { gs with Boards = (gs.Boards.Add (ev.PlayerId, { pb with Deck = newDeck; Hand = newHand })  ) }
-    | Error e ->
-        { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
+    getExistingPlayerBoardFromGameState ev.PlayerId gs
+    |> Result.bind (moveCardsFromDeckToHand gs ev.PlayerId)
+    |> Result.bind (migrateGameStateToNewStep (ev.PlayerId |> Attack))
+    |> function
+        | Ok g -> g
+        | Error e -> { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
+
 
 let discardCardFromBoard (cardInstanceId : CardInstanceId) (playerBoard : PlayerBoard) =
     let cardToDiscard : CardInstance list = List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards
@@ -434,7 +446,7 @@ let removeNotification gs notificationId =
    { gs with NotificationMessages = match gs.NotificationMessages with
                                     | Some x -> filterNotificationList notificationId x
                                     | None -> None
-   } 
+   }
 
 
 let init =
