@@ -4,6 +4,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CollectionManipulation.fs" />
+    <Compile Include="Domain.fs" />
     <Compile Include="Shared.fs" />
   </ItemGroup>
 </Project>
