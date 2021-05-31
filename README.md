@@ -2689,7 +2689,7 @@ I am leaving this as the final commit of branch `step-10-better-sample-data-and-
 
 ## Switching the player for the GameState
 
-To facilate testing I am not going to add logic to swap Player 1 and Player 2. This should allow us to step through an entire game.
+To facilitate testing, I am not going to add logic to swap Player 1 and Player 2. This should allow us to step through an entire game.
 
 To do this I will add a Msg of type SwapPlayer.
 
@@ -2780,12 +2780,12 @@ let modifyGameStateFromDrawCardEvent (ev: DrawCardEvent) (gs: GameState) =
         | Error e -> { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages e }
 ```
 
-Also, in this branch it was recomended to me that you can zoom cards. I am attempting to add a model that displays card details to the hand.
+Also, in this branch, it was recommended to me that you can zoom cards. I am attempting to add a model that displays card details to the hand.
 
 To try this I am trying to add a modal on click for the hand.
 
 
-Meanwhile I am noticing I really need to refactor out operators for dutff like :
+Meanwhile, I am noticing I really need to refactor out operators for stuff like :
 ```
     |        |> Result.bind (applyUpdatedPlayerBoardResultToGamesState playerId gs x)
 ```
@@ -2808,9 +2808,9 @@ let (>=>) switch1 switch2 x =
 
 ```
 
-Addtionally, I moved many of the constructors for domain objects to the Shared Domain and deleted unused test generator functions.
+Additionally, I moved many of the constructors for domain objects to the Shared Domain and deleted unused test generator functions.
 
-Eventually I was able to get the modal to work by adding a property to the game board : `ZoomedInCard` this is an optional CardInstanceId. I then added functions to check if the zoomed in card was set to teh current card. If it is the view displays the modal, if not it is hidden. I also added a Msg ZoomedInCardToggled and wired that up to the update funtion and the click of the a thumbnail image in the hand.
+Eventually, I was able to get the modal to work by adding a property to the game board: `ZoomedInCard` this is an optional CardInstanceId. I then added functions to check if the zoomed-in the card was set to the current card. If it is the view displays the modal, if not it is hidden. I also added a Msg ZoomedInCardToggled and wired that up to the update function and the click of the thumbnail image in the hand.
 
 
 
