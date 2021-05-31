@@ -26,7 +26,7 @@ let creatureCreatureConstructor creatureId name description primaryResource reso
                 ImageUrl = imgUrl
                 Description =description
             }
-    | _, _ -> Error "No"
+    | _,_ -> Error "No"
 
 let resourceCardConstructor resourceCardId resource =
     let cardId = NonEmptyString.build resourceCardId |> Result.map CardId
@@ -56,8 +56,8 @@ let resourceCardDb =
       "LightningEnergy", Resource.Lightning;
       "PsychicEnergy", Resource.Psychic;
       "FightingEnergy", Resource.Fighting;
-      "ColorlessEnergy", Resource.Colorless     
-    ] |> List.map (fun (x,y) -> resourceCardConstructor  x y)
+      "ColorlessEnergy", Resource.Colorless
+    ] |> List.map (fun (x,y) -> resourceCardConstructor x y)
     |> selectAllOkayResults
 
 let creatureCardDb =
