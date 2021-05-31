@@ -22,6 +22,12 @@ type DiscardCardEvent =
         PlayerId: PlayerId
         CardInstanceId: CardInstanceId
     }
+type ToggleZoomOnCardEvent =
+    {
+        GameId: GameId
+        PlayerId: PlayerId
+        CardInstanceId: CardInstanceId
+    }
 type PlayCardEvent =
     {
         GameId: GameId
@@ -61,6 +67,7 @@ type Msg =
     | StartGame of StartGameEvent
     | DrawCard of DrawCardEvent
     | DiscardCard of DiscardCardEvent
+    | ToggleZoomOnCard of ToggleZoomOnCardEvent
     | PlayCard of PlayCardEvent
     | EndPlayStep of EndPlayStepEvent
     | PerformAttack of PerformAttackEvent
@@ -68,3 +75,4 @@ type Msg =
     | EndTurn of EndTurnEvent
     | DeleteNotification of Guid
     | GameWon of GameWonEvent
+    | SwapPlayer

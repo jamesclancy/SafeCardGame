@@ -71,6 +71,7 @@ module Domain =
             DiscardPile: Deck
             TotalResourcePool: ResourcePool
             AvailableResourcePool: ResourcePool
+            ZoomedCard: Option<CardInstanceId>
         }
     and ResourcePool = Map<Resource, int>
     and Hand =
@@ -239,3 +240,97 @@ module Domain =
         resourcePool
         |> Seq.map (fun x -> sprintf "%s x%i" (getSymbolForResource x.Key) x.Value)
         |> String.concat ";"
+
+    let appendNotificationMessageToListOrCreateList (existingNotifications : Option<Notification list>) (newNotification : string) =
+        match existingNotifications with
+        | Some nl ->
+            newNotification
+            |> createNotification
+            |> (fun y -> y :: nl)
+            |> Some
+        | None ->
+            [ (newNotification |> createNotification) ]
+            |> Some
+
+    let currentResourceAmountFromPool (resourcePool : ResourcePool) (resource : Resource) =
+        match resourcePool.TryGetValue(resource) with
+        | true, t -> t
+        | false, _ -> 0
+
+    let rec addResourcesToPool (rp1 : Map<Resource, int>)  rp2 =
+        match rp2 with
+        | [] ->  rp1 |> Map.toSeq |> ResourcePool
+        | [ (x,y) ] ->
+            rp1.Add(x, y + (currentResourceAmountFromPool rp1 x))  |> Map.toSeq |> ResourcePool
+        | (x,y) :: xs  ->
+            addResourcesToPool (rp1.Add(x,  y + (currentResourceAmountFromPool rp1 x))) xs
+
+    let filterNotificationList notificationId l =
+        l |> List.filter (fun x -> x.Id <> notificationId)
+        |> function
+            | [] -> None
+            | x -> Some x
+
+    let removeNotificationFromGameState gs notificationId =
+       { gs with NotificationMessages = match gs.NotificationMessages with
+                                        | Some x -> filterNotificationList notificationId x
+                                        | None -> None
+       }
+
+    let migrateGameStateToNewStep newStep (gs: GameState) =
+        // maybe some vaidation could go here?
+        Ok {
+            gs with CurrentStep = newStep
+        }
+
+
+    let getNeededResourcesForCard card =
+        match card with
+        | CharacterCard cc -> cc.ResourceCost
+        | ResourceCard rc -> rc.ResourceCost
+        | EffectCard ec -> ec.ResourceCost
+
+    let tryRemoveResourceFromPlayerBoard (playerBoard:PlayerBoard) x y =
+        match playerBoard.AvailableResourcePool.TryGetValue(x) with
+        | true, z when z >= y -> Ok {playerBoard with AvailableResourcePool = (addResourcesToPool playerBoard.AvailableResourcePool  [ (x, 0-y) ])  }
+        | _, _ -> sprintf "Not enough %s" (getSymbolForResource x) |> Error
+
+    let rec decrementResourcesFromPlayerBoard playerBoard resourcePool =
+        match resourcePool with
+        | [] -> Ok playerBoard
+        | [ (x, y) ] -> tryRemoveResourceFromPlayerBoard playerBoard x y
+        | (x, y) :: xs ->
+            match tryRemoveResourceFromPlayerBoard playerBoard x y with
+            | Error e -> e |> Error
+            | Ok pb -> decrementResourcesFromPlayerBoard pb xs
+
+    let createInPlayCreatureFromCardInstance characterCard inPlayCreatureId =
+                {
+                    InPlayCharacterId=  inPlayCreatureId
+                    Card = characterCard
+                    CurrentDamage=  0
+                    SpecialEffect=  None
+                    AttachedEnergy =  Seq.empty |> ResourcePool
+                    SpentEnergy = Seq.empty |> ResourcePool
+                } |> Ok
+
+    let createPlayer playerIdStr playerName playerCurrentLife playerPlaymatUrl =
+        let playerId = NonEmptyString.build playerIdStr |> Result.map PlayerId
+        let playerPlaymatUrl = ImageUrlString.build playerPlaymatUrl
+
+        match playerId, playerPlaymatUrl with
+        | Ok s, Ok pm ->
+            Ok {
+               PlayerId = s
+               Name = playerName
+               RemainingLifePoints = playerCurrentLife
+               PlaymatUrl = pm
+            }
+        | _ -> Error "Unable to create player"
+
+    let getExistingPlayerBoardFromGameState playerId gs =
+     match gs.Boards.TryGetValue playerId with
+        | true, pb ->
+            pb |> Ok
+        | false, _ ->
+            (sprintf "Unable to locate player board for player id %s" (playerId.ToString())) |> Error
