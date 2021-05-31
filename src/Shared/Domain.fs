@@ -150,7 +150,9 @@ module Domain =
         {
             InPlayCharacterId: InPlayCreatureId
             Card: Card
+            Name: string
             CurrentDamage: int
+            TotalHealth: int
             SpecialEffect: Option<SpecialCondition list>
             AttachedEnergy: ResourcePool
             SpentEnergy: ResourcePool
@@ -304,11 +306,25 @@ module Domain =
             | Error e -> e |> Error
             | Ok pb -> decrementResourcesFromPlayerBoard pb xs
 
+    let getTotalHealthFromCard card =
+        match card with
+        | CharacterCard cc -> cc.Creature.Health
+        | _ -> 0
+
+
+    let getNameFromCard card =
+        match card with
+        | CharacterCard cc -> cc.Name
+        | ResourceCard cc -> cc.Name
+        | EffectCard cc -> cc.Name
+
     let createInPlayCreatureFromCardInstance characterCard inPlayCreatureId =
                 {
                     InPlayCharacterId=  inPlayCreatureId
                     Card = characterCard
                     CurrentDamage=  0
+                    Name = getNameFromCard characterCard
+                    TotalHealth = getTotalHealthFromCard characterCard
                     SpecialEffect=  None
                     AttachedEnergy =  Seq.empty |> ResourcePool
                     SpentEnergy = Seq.empty |> ResourcePool

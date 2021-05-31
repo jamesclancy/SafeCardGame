@@ -111,7 +111,7 @@ let renderEnemyActiveCreature (inPlayCreature : Option<InPlayCreature>) =
                             [ p [ Class "card-header-title" ]
                                 [ str (sprintf "✫ %s" card.Name) ]
                               p [ Class "card-header-icon" ]
-                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - creature.CurrentDamage) card.Creature.Health)
+                                [ str (sprintf "💓 %i/%i" (creature.TotalHealth - creature.CurrentDamage) creature.TotalHealth)
                                   str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
                           div [ Class "card-image" ]
                             [ figure [ Class "image is-4by3" ]
@@ -142,7 +142,7 @@ let renderEnemyBenchRow inPlayCreature =
                               td [ ]
                                 [ str (textDescriptionForListOfSpecialConditions inPlayCreature.SpecialEffect) ]
                               td [ ]
-                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - inPlayCreature.CurrentDamage) card.Creature.Health)  ] ]
+                                [ str (sprintf "💓 %i/%i" (inPlayCreature.TotalHealth - inPlayCreature.CurrentDamage) inPlayCreature.TotalHealth)  ] ]
 
 let renderEnemyBench bench  =
     match bench with
@@ -286,7 +286,7 @@ let playerActiveCreature (inPlayCreature : Option<InPlayCreature>) =
                             [ p [ Class "card-header-title" ]
                                 [ str (sprintf "✫ %s" card.Name) ]
                               p [ Class "card-header-icon" ]
-                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - creature.CurrentDamage) card.Creature.Health)
+                                [ str (sprintf "💓 %i/%i" (creature.TotalHealth - creature.CurrentDamage) creature.TotalHealth)
                                   str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
                           div [ Class "card-image" ]
                             [ figure [ Class "image is-4by3" ]
@@ -321,7 +321,7 @@ let playerBenchCreature (inPlayCreature : InPlayCreature)=
                             [ p [ Class "card-header-title" ]
                                 [ str card.Name ]
                               p [ Class "card-header-icon" ]
-                                [ str (sprintf "💓 %i/%i" (card.Creature.Health - creature.CurrentDamage) card.Creature.Health)
+                                [ str (sprintf "💓 %i/%i" (creature.TotalHealth - creature.CurrentDamage) creature.TotalHealth)
                                   str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
                           div [ Class "card-image" ]
                             [ figure [ Class "image is-4by3" ]

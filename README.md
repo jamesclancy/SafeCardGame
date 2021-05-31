@@ -2812,5 +2812,75 @@ Additionally, I moved many of the constructors for domain objects to the Shared 
 
 Eventually, I was able to get the modal to work by adding a property to the game board: `ZoomedInCard` this is an optional CardInstanceId. I then added functions to check if the zoomed-in the card was set to the current card. If it is the view displays the modal, if not it is hidden. I also added a Msg ZoomedInCardToggled and wired that up to the update function and the click of the thumbnail image in the hand.
 
+This all builds and is the final commit in the `step-11-allow-the-user-to-switch-to-being-the-other-player` branch.
+
+## Implementing Attack
+
+The next step will be to imlement the attack functionality.
+
+To do this I implemented several new functions:
+
+```
+let getPlayBoardToTargetAttack (playerId : PlayerId) gs =
+    playerId
+    |> gs.Boards.TryGetValue
+    |> function
+        | true, pb -> pb |> Ok
+        | _, _ -> "Unable to locate target for attack" |> Error
+
+let activeCreatureKilledFromPlayerBoard playBoard :PlayerBoard =
+    match playBoard.Bench with
+    | None | Some [] -> { playBoard with ActiveCreature = None}
+    | Some [ x ] ->  { playBoard with ActiveCreature = Some x; Bench = None}
+    | Some (x :: xs) -> { playBoard with ActiveCreature = Some x; Bench = Some xs}
+
+let applyBasicAttackToPlayBoard (attack : Attack) (playBoard) gs =
+        match playBoard.ActiveCreature with
+        | Some cre when (cre.CurrentDamage + attack.Damage) < cre.TotalHealth ->
+              ({
+                playBoard with ActiveCreature =
+                                    Some { cre with CurrentDamage = cre.CurrentDamage  + attack.Damage }
+              }, 0, sprintf "%i damage dealt to %s" attack.Damage cre.Name)
+        | Some cre ->
+            ((activeCreatureKilledFromPlayerBoard playBoard), 0, sprintf "%i damage dealt to %s. It died." attack.Damage cre.Name)
+        | None ->
+            (playBoard, attack.Damage, sprintf "%i damage dealt to player" attack.Damage)
+
+
+let applyPlayerDamageToPlayer (playerId : PlayerId) damage (gs: GameState) =
+    let player = gs.Players.TryGetValue playerId
+    match player with
+    | true, p -> { gs with Players = gs.Players.Add(playerId, {p with RemainingLifePoints = p.RemainingLifePoints - damage})}
+    | _,_ -> gs
+
+
+let playAttackFromBoard (attack : Attack) (playerId : PlayerId) (gs: GameState) (playerBoard : PlayerBoard) =
+
+    let target = getTheOtherPlayer gs playerId
+    let otherBoard = getPlayBoardToTargetAttack target gs
+
+    match otherBoard with
+    | Ok playBoard ->
+
+        let (newPb, playerDamage, messages) =  (applyBasicAttackToPlayBoard attack playBoard gs)
+
+        { gs with Boards = (gs.Boards.Add (target, newPb)  ) }
+        |> applyPlayerDamageToPlayer target playerDamage
+        |> appendMessagesToGameState messages |>Ok
+    | Error e ->
+        Error e
+
+
+
+let modifyGameStateFromPerformAttackEvent (ev: PerformAttackEvent) (gs: GameState) =
+        getExistingPlayerBoardFromGameState ev.PlayerId gs
+        >>= (playAttackFromBoard ev.Attack ev.PlayerId gs)
+        >>= migrateGameStateToNewStep (ev.PlayerId |> Reconcile )
+        |> applyErrorResultToGamesState gs
+```
+
+I then reference this `modifyGameStateFromPerformAttackEvent` in the update function.
+
+This builds. I will now have to make sure my sample data has attacks and that the the UI is writed up to trigger these events.
 
 
