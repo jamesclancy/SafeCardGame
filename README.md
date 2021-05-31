@@ -2794,5 +2794,23 @@ and
         |> Result.bind (fun x -> (applyUpdatedPlayerBoardResultToGamesState playerId gs x) |> Ok)
 
 ```
+i did this by implementing infix operators like
+
+```
+
+let (>>=) twoTrackInput switchFunction =
+    Result.bind switchFunction twoTrackInput
+
+let (>=>) switch1 switch2 x =
+    match switch1 x with
+    | Ok s -> switch2 s
+    | Error f -> Error f
+
+```
+
+Addtionally, I moved many of the constructors for domain objects to the Shared Domain and deleted unused test generator functions.
+
+Eventually I was able to get the modal to work by adding a property to the game board : `ZoomedInCard` this is an optional CardInstanceId. I then added functions to check if the zoomed in card was set to teh current card. If it is the view displays the modal, if not it is hidden. I also added a Msg ZoomedInCardToggled and wired that up to the update funtion and the click of the a thumbnail image in the hand.
+
 
 

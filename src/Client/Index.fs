@@ -19,22 +19,6 @@ let (>=>) switch1 switch2 x =
     | Ok s -> switch2 s
     | Error f -> Error f
 
-
-let createPlayer playerIdStr playerName playerCurrentLife playerPlaymatUrl =
-    let playerId = NonEmptyString.build playerIdStr |> Result.map PlayerId
-    let playerPlaymatUrl = ImageUrlString.build playerPlaymatUrl
-
-    match playerId, playerPlaymatUrl with
-    | Ok s, Ok pm ->
-        Ok {
-           PlayerId = s
-           Name = playerName
-           RemainingLifePoints = playerCurrentLife
-           PlaymatUrl = pm
-        }
-    | _ -> Error "Unable to create player"
-
-
 let testCreatureCardGenerator cardInstanceIdStr =
     let cardInstanceId = NonEmptyString.build cardInstanceIdStr |> Result.map CardInstanceId
 
@@ -74,86 +58,6 @@ let testDeckSeqGenerator (numberOfCards :int) =
                     )
     |> List.ofSeq
     |> CollectionManipulation.selectAllOkayResults
-
-let testCardSeqGenerator (numberOfCards : int) =
-    seq { 0 .. (numberOfCards - 1) }
-    |> Seq.map (fun x -> testCreatureCardGenerator
-                            (sprintf "ExcitingCharacter%i" x))
-    |> Seq.map (fun x ->
-                        match x with
-                        | Ok s -> [ s ] |> Ok
-                        | Error e -> e |> Error)
-    |> Seq.fold (fun x y ->
-                    match x, y with
-                    | Ok accum, Ok curr -> curr @ accum |> Ok
-                    | _,_ -> "Eating Errors lol" |> Error
-                ) (Ok List.empty)
-
-let inPlayCreatureGenerator inPlayCreatureIdStr cardInstanceIdStr cardIdStr cardImageUrlStr =
-        let inPlayCreatureId = NonEmptyString.build inPlayCreatureIdStr |> Result.map InPlayCreatureId
-        let card = testCreatureCardGenerator cardInstanceIdStr
-
-        match inPlayCreatureId, card with
-        | Ok id, Ok c ->
-            Ok {
-                InPlayCharacterId=  id
-                Card = c.Card
-                CurrentDamage=  0
-                SpecialEffect=  None
-                AttachedEnergy = [ Resource.Grass, 4;
-                                     Resource.Colorless, 1 ] |> Seq.ofList |> ResourcePool
-                SpentEnergy = [ Resource.Grass, 4;
-                                     Resource.Colorless, 1 ] |> Seq.ofList |> ResourcePool
-            }
-        | _, _ -> "Unable to create in play creature." |> Error
-
-
-let inPlayCreatureSeqGenerator (numberOfCards : int) =
-    seq { 0 .. (numberOfCards - 1) }
-    |> Seq.map (fun x -> inPlayCreatureGenerator
-                            (sprintf "ExcitingCharacter%i" x)
-                            (sprintf "ExcitingCharacter%i" x)
-                            (sprintf "Exciting Character #%i" x)
-                            (sprintf "https://picsum.photos/320/200?%i" x))
-    |> Seq.map (fun x ->
-                        match x with
-                        | Ok s -> [ s ] |> Ok
-                        | Error e -> e |> Error)
-    |> Seq.fold (fun x y ->
-                    match x, y with
-                    | Ok accum, Ok curr -> curr @ accum |> Ok
-                    | _,_ -> "Eating Errors lol" |> Error
-                ) (Ok List.empty)
-
-let playerBoard (player : Player) =
-    let deckTemp =  testCardSeqGenerator 35
-    let handTemp = testCardSeqGenerator 3
-
-    let activeCreature = inPlayCreatureGenerator "InPlayCharacter" "InPlayCharacter" "InPlayCharacter" (sprintf "https://picsum.photos/320/200?%s" (System.Guid.NewGuid().ToString()))
-    let benchCreatures = inPlayCreatureSeqGenerator 4
-    match deckTemp, handTemp, activeCreature, benchCreatures with
-    | Ok deck, Ok hand, Ok cre, Ok ben ->
-        Ok  {
-                PlayerId=  player.PlayerId
-                Deck= {
-                    TopCardsExposed = 0
-                    Cards =  deck
-                }
-                Hand=
-                    {
-                        Cards = hand
-                    }
-                ActiveCreature= Some cre
-                Bench=  Some ben
-                DiscardPile= {
-                    TopCardsExposed = 0
-                    Cards = List.empty
-                }
-                TotalResourcePool= ResourcePool Seq.empty
-                AvailableResourcePool =  ResourcePool Seq.empty
-                ZoomedCard = None
-            }
-    | _,_, _,_ -> "Error creating deck or hand" |> Error
 
 let emptyPlayerBoard (player : Player) =
         Ok  {
@@ -221,14 +125,6 @@ let intitalizeGameStateFromStartGameEvent (ev : StartGameEvent) =
                 TurnNumber= 1
             }
 
-let getExistingPlayerBoardFromGameState playerId gs =
- match gs.Boards.TryGetValue playerId with
-    | true, pb ->
-        pb |> Ok
-    | false, _ ->
-        (sprintf "Unable to locate player board for player id %s" (playerId.ToString())) |> Error
-
-
 let moveCardsFromDeckToHand gs playerId pb =
     let newDeck, newHand =  drawCardsFromDeck 1 pb.Deck pb.Hand
     Ok { gs with Boards = (gs.Boards.Add (playerId, { pb with Deck = newDeck; Hand = newHand })  ) }
@@ -279,7 +175,7 @@ let applyUpdatedPlayerBoardResultToGamesState playerId gs newBoard =
 let toggleZoomOnCardForBoard (cardInstanceId : CardInstanceId) (playerBoard : PlayerBoard) =
     let newZoom = match playerBoard.ZoomedCard with
                     | Some c when c = cardInstanceId -> None
-                    | Some c when c <> cardInstanceId -> Some cardInstanceId
+                    | Some c -> Some cardInstanceId
                     | None -> Some cardInstanceId
     Ok { playerBoard with ZoomedCard = newZoom }
 
@@ -339,12 +235,11 @@ let decrementRequiredResourcesFromModel cardToDiscard (playerId : PlayerId) (gs:
 let playCardFromBoardImp cardInstanceId playerId playerBoard (x : CardInstance) cardToDiscard gs =
     match x.Card with
                | CharacterCard cc ->
-
-                 System.Guid.NewGuid().ToString()
-                 |> buildInPlayCreatureId
-                 >>= (createInPlayCreatureFromCardInstance x.Card)
-                 >=> (addCreatureToGameState cardInstanceId x playerId gs playerBoard)
-                 >>= (applyEffectIfDefinied cc.EnterSpecialEffects)
+                     (System.Guid.NewGuid().ToString())
+                     |> buildInPlayCreatureId
+                     >>= (createInPlayCreatureFromCardInstance x.Card)
+                     >>= (fun y -> (addCreatureToGameState cardInstanceId x playerId gs playerBoard y) |> Ok)
+                     >>= (applyEffectIfDefinied cc.EnterSpecialEffects)
 
                | ResourceCard rc ->
                  let newAvailResourcePool =

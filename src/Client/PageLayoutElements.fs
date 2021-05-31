@@ -419,6 +419,14 @@ let renderCharacterCard (card: CharacterCard) =
                                 ]
 
 
+let renderThumbnailCharacterCard (card: CharacterCard) =
+    figure [ Class "image is-64x64" ]
+                            [ img [ Src (card.ImageUrl.ToString())
+                                    Alt card.Name
+                                    Class "is-fullwidth" ] ]
+let renderThumbnailResourceCard (card: ResourceCard) =
+     p [Class "title is-1"] [str (getSymbolForResource card.PrimaryResource)]
+
 let renderResourceCard (card: ResourceCard) =
     [
             header [ Class "card-header" ]
@@ -440,7 +448,7 @@ let renderResourceCard (card: ResourceCard) =
                            ] ] ]
 
 
-let renderCardForHand (card: Card) : ReactElement list=
+let renderCardDetailForHand (card: Card) : ReactElement list=
     match card with
     | CharacterCard c -> renderCharacterCard c
     | ResourceCard rc -> renderResourceCard rc
@@ -449,56 +457,65 @@ let renderCardForHand (card: Card) : ReactElement list=
             strong [] [ str "IDK" ]
          ]
 
+let renderCardThumbnailForHand (card: Card) : ReactElement =
+    match card with
+    | CharacterCard c -> renderThumbnailCharacterCard c
+    | ResourceCard rc -> renderThumbnailResourceCard rc
+    | _ ->
+            strong [] [ str "IDK" ]
+
+
 let isCardZoomed playerBoard cardInstanceId =
     match playerBoard.ZoomedCard with
     | Some c when c = cardInstanceId -> true
     | _ -> false
 
 let renderCardInstanceForHand  (dispatch : Msg -> unit)  playerBoard gameId playerId (card: CardInstance) =
-    let cardModal isActive closeDisplay =
-       Modal.modal [ Modal.IsActive isActive ]
-        [ Modal.background [ Props [ OnClick closeDisplay ] ] [ ]
-          Modal.Card.card [ ]
-            [ Modal.Card.head [ ]
-                [ Modal.Card.title [ ]
-                    [ str "Modal title" ]
-                  Delete.delete [ Delete.OnClick closeDisplay ] [ ] ]
-              Modal.Card.body [ ]
-                        [ yield! renderCardForHand card.Card ]
-              Modal.Card.foot [ ]
-                              [ button [
-                                    OnClick (fun _->
-                                                    ({
-                                                        GameId = gameId
-                                                        PlayerId = playerId
-                                                        CardInstanceId = card.CardInstanceId
-                                                    } : PlayCardEvent) |> PlayCard |>  dispatch)
-                                    Class "card-footer-item" ]
-                                  [ str "Play" ]
-                                button [
-                                    OnClick (fun _->
-                                                    ({
-                                                        GameId = gameId
-                                                        PlayerId = playerId
-                                                        CardInstanceId = card.CardInstanceId
-                                                    } : DiscardCardEvent) |> DiscardCard |>  dispatch)
-                                    Class "card-footer-item" ]
-                                  [ str "Discard" ] ] ] ]
-
-    div [ ]
-        [ cardModal (isCardZoomed playerBoard card.CardInstanceId) (fun _->
+    let toggleActive =  (fun _ ->
                                                     ({
                                                         GameId = gameId
                                                         PlayerId = playerId
                                                         CardInstanceId = card.CardInstanceId
                                                     } : ToggleZoomOnCardEvent) |> ToggleZoomOnCard |>  dispatch)
-          Button.button [ Button.OnClick  (fun _->
+    let playCard =  (fun _ ->
                                                     ({
                                                         GameId = gameId
                                                         PlayerId = playerId
                                                         CardInstanceId = card.CardInstanceId
-                                                    } : ToggleZoomOnCardEvent) |> ToggleZoomOnCard |>  dispatch) ]
-            [ str (sprintf "Show card modal-%b-%O vs %O" (isCardZoomed playerBoard card.CardInstanceId) card.CardInstanceId playerBoard.ZoomedCard ) ] ]
+                                                    } : PlayCardEvent) |> PlayCard |>  dispatch
+                                                    |> ignore
+                                                    toggleActive ())
+    let discardCard =  (fun _ ->
+                                                    ({
+                                                        GameId = gameId
+                                                        PlayerId = playerId
+                                                        CardInstanceId = card.CardInstanceId
+                                                    } :  DiscardCardEvent) |> DiscardCard |>  dispatch
+                                                    |> ignore
+                                                    toggleActive () )
+    let cardModal isActive closeDisplay =
+       Modal.modal [ Modal.IsActive isActive ]
+        [ Modal.background [ Props [ OnClick closeDisplay ] ] [ ]
+          Modal.Card.card [ ]
+            [ Modal.Card.head [ ]
+                [
+                  Delete.delete [ Delete.OnClick closeDisplay ] [ ] ]
+              Modal.Card.body [ ]
+                        [ yield! renderCardDetailForHand card.Card ]
+              Modal.Card.foot [ ]
+                              [ button [
+                                    OnClick playCard
+                                    Class "card-footer-item" ]
+                                  [ str "Play" ]
+                                button [
+                                    OnClick discardCard
+                                    Class "card-footer-item" ]
+                                  [ str "Discard" ] ] ] ]
+
+    div [ ]
+        [ cardModal (isCardZoomed playerBoard card.CardInstanceId) toggleActive
+          a [ OnClick toggleActive ]
+            [ renderCardThumbnailForHand card.Card ] ]
 
 
 let playerHand columnsInHand gameId playerId (hand : Hand)  (dispatch : Msg -> unit) pb=
@@ -588,7 +605,7 @@ let mainLayout  model dispatch =
                     playerControlCenter cp cpb model dispatch
                     notificationArea model.NotificationMessages dispatch
                     playerCreatures cp cpb
-                    playerHand 6 model.GameId cp.PlayerId cpb.Hand dispatch opb
+                    playerHand 12 model.GameId cp.PlayerId cpb.Hand dispatch cpb
                 ]
           ]
           footerBand

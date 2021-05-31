@@ -327,3 +327,10 @@ module Domain =
                PlaymatUrl = pm
             }
         | _ -> Error "Unable to create player"
+
+    let getExistingPlayerBoardFromGameState playerId gs =
+     match gs.Boards.TryGetValue playerId with
+        | true, pb ->
+            pb |> Ok
+        | false, _ ->
+            (sprintf "Unable to locate player board for player id %s" (playerId.ToString())) |> Error
