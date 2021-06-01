@@ -306,6 +306,11 @@ module Domain =
             | Error e -> e |> Error
             | Ok pb -> decrementResourcesFromPlayerBoard pb xs
 
+    let hasEnoughResources rp1 rp2 =
+        match decrementResourcesFromPlayerBoard rp1 rp2 with
+        | Ok _ -> true
+        | Error _ -> false
+
     let getTotalHealthFromCard card =
         match card with
         | CharacterCard cc -> cc.Creature.Health

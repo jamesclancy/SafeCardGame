@@ -128,7 +128,7 @@ let renderEnemyActiveCreature (inPlayCreature : Option<InPlayCreature>) =
                                     [
                                         yield! seq {
                                             for a in card.Creature.Attack do
-                                                (renderAttackRow a)
+                                                (renderAttackRowWithoutActions a )
                                         } ] ] ] ] ]
 
 let renderEnemyBenchRow inPlayCreature =
@@ -274,7 +274,7 @@ let playerControlCenter  (player : Player) playerBoard gameState dispatch =
               div [ Class "navbar-end" ]
                 [ stepNavigation player playerBoard gameState dispatch ] ] ] ]
 
-let playerActiveCreature (inPlayCreature : Option<InPlayCreature>) =
+let playerActiveCreature  dispatch gameId playerId isYourAttack playerBoard (inPlayCreature : Option<InPlayCreature>) =
   match (Option.map (fun x -> (x, x.Card)) inPlayCreature) with
   | None -> strong [] [ str "No creature in active play" ]
   | Some (creature, EffectCard card) ->  strong [] [ str "Active creature is not a character?" ]
@@ -303,7 +303,7 @@ let playerActiveCreature (inPlayCreature : Option<InPlayCreature>) =
                                     [
                                         yield! seq {
                                             for a in card.Creature.Attack do
-                                                (renderAttackRow a)
+                                                (renderAttackRow  true isYourAttack playerBoard gameId playerId creature.InPlayCharacterId a dispatch )
                                         } ] ] ]
                           footer [ Class "card-footer" ]
                             [ a [ Href "#"
@@ -338,7 +338,7 @@ let playerBenchCreature (inPlayCreature : InPlayCreature)=
                                     [
                                         yield! seq {
                                             for a in card.Creature.Attack do
-                                                (renderAttackRow a)
+                                                (renderAttackRowWithoutActions a)
                                         } ] ] ] ] ]
 
 let playerBench (bench : Option<InPlayCreature list>) columnsInBench =
@@ -365,7 +365,7 @@ let playerBench (bench : Option<InPlayCreature list>) columnsInBench =
         } ] ]
 
 
-let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
+let playerCreatures  dispatch gameId playerId isYourAttack (player: Player) (playerBoard: PlayerBoard) =
   section [
           Class "section"
           Style [ Background (sprintf "url('%s')" (player.PlaymatUrl.ToString()))
@@ -375,7 +375,7 @@ let playerCreatures  (player: Player) (playerBoard: PlayerBoard) =
     [ div [ Class "container py-r" ] [
           div [ Class "columns" ]
             [ div [ Class "column is-3" ]
-                [ playerActiveCreature playerBoard.ActiveCreature ]
+                [ playerActiveCreature   dispatch gameId playerId isYourAttack playerBoard playerBoard.ActiveCreature ]
               playerBench playerBoard.Bench 4
 
                ] ] ]
@@ -413,7 +413,7 @@ let renderCharacterCard (card: CharacterCard) =
                                 [
                                   yield! seq {
                                     for a in card.Creature.Attack do
-                                      (renderAttackRow a)
+                                      (renderAttackRowWithoutActions a)
                                   }
                                 ] ] ]
                                 ]
@@ -590,6 +590,22 @@ let notificationArea (messages :Option<Notification list>) dispatch=
     | _ ->
         div [] []
 
+let isOnPlayersTurn playerId gameStep =
+    match gameStep with
+    | GameOver _ | NotCurrentlyPlaying -> false
+    | Draw c -> c= playerId
+    | Play c -> c= playerId
+    | Attack c -> c= playerId
+    | Reconcile c -> c= playerId
+
+let isPlayerAbleToAttack playerId gameStep =
+    match gameStep with
+    | GameOver _ | NotCurrentlyPlaying -> false
+    | Draw c -> false
+    | Play c -> false
+    | Attack c -> c= playerId
+    | Reconcile c -> false
+
 let mainLayout  model dispatch =
   match extractNeededModelsFromState model with
   | Ok op, Ok opb, Ok cp, Ok cpb ->
@@ -604,7 +620,7 @@ let mainLayout  model dispatch =
               div [ Class "column is-8"] [
                     playerControlCenter cp cpb model dispatch
                     notificationArea model.NotificationMessages dispatch
-                    playerCreatures cp cpb
+                    playerCreatures dispatch  model.GameId cp.PlayerId (isPlayerAbleToAttack cp.PlayerId model.CurrentStep)  cp cpb
                     playerHand 12 model.GameId cp.PlayerId cpb.Hand dispatch cpb
                 ]
           ]

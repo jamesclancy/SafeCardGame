@@ -21,7 +21,14 @@ let creatureCreatureConstructor creatureId name description primaryResource reso
                       {
                         Health= health
                         Weaknesses=  weaknesses
-                        Attack = List.empty
+                        Attack = [
+                                    {
+                                        Damage = 1
+                                        Name = "Tackle"
+                                        Cost = Seq.empty |> ResourcePool
+                                        SpecialEffect = None
+                                    }
+                                 ]
                       }
                 ImageUrl = imgUrl
                 Description =description
