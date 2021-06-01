@@ -2810,13 +2810,13 @@ let (>=>) switch1 switch2 x =
 
 Additionally, I moved many of the constructors for domain objects to the Shared Domain and deleted unused test generator functions.
 
-Eventually, I was able to get the modal to work by adding a property to the game board: `ZoomedInCard` this is an optional CardInstanceId. I then added functions to check if the zoomed-in the card was set to the current card. If it is the view displays the modal, if not it is hidden. I also added a Msg ZoomedInCardToggled and wired that up to the update function and the click of the thumbnail image in the hand.
+Eventually, I was able to get the modal to work by adding a property to the game board: `ZoomedInCard` this is an optional CardInstanceId. I then added functions to check if the zoomed-in card was set to the current card. If it is the view displays the modal, if not it is hidden. I also added a Msg ZoomedInCardToggled and wired that up to the update function and the click of the thumbnail image in the hand.
 
 This all builds and is the final commit in the `step-11-allow-the-user-to-switch-to-being-the-other-player` branch.
 
 ## Implementing Attack
 
-The next step will be to imlement the attack functionality.
+The next step will be to implement the attack functionality.
 
 To do this I implemented several new functions:
 
@@ -2881,7 +2881,7 @@ let modifyGameStateFromPerformAttackEvent (ev: PerformAttackEvent) (gs: GameStat
 
 I then reference this `modifyGameStateFromPerformAttackEvent` in the update function.
 
-This builds. I will now have to make sure my sample data has attacks and that the the UI is writed up to trigger these events.
+This builds. I will now have to make sure my sample data has attacks and that the UI is wired up to trigger these events.
 
 
 To wire up the UI I am able to modify the `renderAttackRow` to also include a button to exec an attack if it is available like:
@@ -2977,3 +2977,8 @@ let creatureCreatureConstructor creatureId name description primaryResource reso
             }
     | _,_ -> Error "No"
 ```
+I am now able to test the game. I can deal damage to creatures and players. It works in terms of basic functionality.
+
+I am leaving this as the last commit in the branch `step-12-implement-attack`.
+
+Next, I would like a better way to come up with more complicated and complete sets of decks, players, and cards.
