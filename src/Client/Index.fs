@@ -224,13 +224,11 @@ let buildInPlayCreatureId idStr =
     |> NonEmptyString.build
     |> Result.map InPlayCreatureId
 
-
 let decrementRequiredResourcesFromModel cardToDiscard (playerId : PlayerId) (gs: GameState) (playerBoard : PlayerBoard) =
      getNeededResourcesForCard cardToDiscard
      |> Map.toList
      |> decrementResourcesFromPlayerBoard playerBoard
      >>= (fun updatedPlayerBoard -> Ok {gs with Boards = gs.Boards.Add(playerId, updatedPlayerBoard) })
-
 
 let playCardFromBoardImp cardInstanceId playerId playerBoard (x : CardInstance) cardToDiscard gs =
     match x.Card with
@@ -283,7 +281,6 @@ let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (g
         >>= (playCardFromBoardImp cardInstanceId playerId playerBoard x cardToDiscard)
     | _ ->
         (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
-
 
 let modifyGameStateFromPlayCardEvent (ev: PlayCardEvent) (gs: GameState) =
         getExistingPlayerBoardFromGameState ev.PlayerId gs
@@ -354,6 +351,65 @@ let formatGameOverMessage (notifications : Option<Notification list>) =
         |> Seq.map (fun x -> x.ToString())
         |> String.concat ";"
 
+
+let getPlayBoardToTargetAttack (playerId : PlayerId) gs =
+    playerId
+    |> gs.Boards.TryGetValue
+    |> function
+        | true, pb -> pb |> Ok
+        | _, _ -> "Unable to locate target for attack" |> Error
+
+let activeCreatureKilledFromPlayerBoard playBoard :PlayerBoard =
+    match playBoard.Bench with
+    | None | Some [] -> { playBoard with ActiveCreature = None}
+    | Some [ x ] ->  { playBoard with ActiveCreature = Some x; Bench = None}
+    | Some (x :: xs) -> { playBoard with ActiveCreature = Some x; Bench = Some xs}
+
+let applyBasicAttackToPlayBoard (attack : Attack) (playBoard) gs =
+        match playBoard.ActiveCreature with
+        | Some cre when (cre.CurrentDamage + attack.Damage) < cre.TotalHealth ->
+              ({
+                playBoard with ActiveCreature =
+                                    Some { cre with CurrentDamage = cre.CurrentDamage  + attack.Damage }
+              }, 0, sprintf "%i damage dealt to %s" attack.Damage cre.Name)
+        | Some cre ->
+            ((activeCreatureKilledFromPlayerBoard playBoard), 0, sprintf "%i damage dealt to %s. It died." attack.Damage cre.Name)
+        | None ->
+            (playBoard, attack.Damage, sprintf "%i damage dealt to player" attack.Damage)
+
+
+let applyPlayerDamageToPlayer (playerId : PlayerId) damage (gs: GameState) =
+    let player = gs.Players.TryGetValue playerId
+    match player with
+    | true, p -> { gs with Players = gs.Players.Add(playerId, {p with RemainingLifePoints = p.RemainingLifePoints - damage})}
+    | _,_ -> gs
+
+let appendMessagesToGameState messages (gs : GameState) =
+    { gs with NotificationMessages = appendNotificationMessageToListOrCreateList gs.NotificationMessages messages }
+
+let playAttackFromBoard (attack : Attack) (playerId : PlayerId) (gs: GameState) (playerBoard : PlayerBoard) =
+
+    let target = getTheOtherPlayer gs playerId
+    let otherBoard = getPlayBoardToTargetAttack target gs
+
+    match otherBoard with
+    | Ok playBoard ->
+
+        let (newPb, playerDamage, messages) =  (applyBasicAttackToPlayBoard attack playBoard gs)
+
+        { gs with Boards = (gs.Boards.Add (target, newPb)  ) }
+        |> applyPlayerDamageToPlayer target playerDamage
+        |> appendMessagesToGameState messages |>Ok
+    | Error e ->
+        Error e
+
+
+let modifyGameStateFromPerformAttackEvent (ev: PerformAttackEvent) (gs: GameState) =
+        getExistingPlayerBoardFromGameState ev.PlayerId gs
+        >>= (playAttackFromBoard ev.Attack ev.PlayerId gs)
+        >>= migrateGameStateToNewStep (ev.PlayerId |> Reconcile )
+        |> applyErrorResultToGamesState gs
+
 let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
     match msg with
     | StartGame ev ->
@@ -369,7 +425,7 @@ let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
     | EndPlayStep ev ->
         { model with CurrentStep = (Attack ev.PlayerId)}, Cmd.none
     | PerformAttack  ev ->
-        model, Cmd.none
+        modifyGameStateFromPerformAttackEvent ev model, Cmd.none
     | SkipAttack ev ->
         { model with CurrentStep = (Reconcile ev.PlayerId)}, Cmd.none
     | EndTurn ev ->
