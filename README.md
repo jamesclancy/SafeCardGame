@@ -2982,3 +2982,10 @@ I am now able to test the game. I can deal damage to creatures and players. It w
 I am leaving this as the last commit in the branch `step-12-implement-attack`.
 
 Next, I would like a better way to come up with more complicated and complete sets of decks, players, and cards.
+
+## Pushing Decks, Players and Cards into a Database
+
+I am not going to try to start pulling the decks, player info and cards from a database.
+
+The first thing I am going to do for this is move the `SampleCardDatabase` to the Shared project from the Client project.
+

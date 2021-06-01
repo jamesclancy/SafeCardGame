@@ -8,5 +8,7 @@
     <Compile Include="CollectionManipulation.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="Shared.fs" />
+
+    <Compile Include="SampleCardDatabase.fs" />
   </ItemGroup>
 </Project>
