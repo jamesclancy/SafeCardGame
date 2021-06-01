@@ -23,7 +23,7 @@ let creatureCreatureConstructor creatureId name description primaryResource reso
                         Weaknesses=  weaknesses
                         Attack = [
                                     {
-                                        Damage = 1
+                                        Damage = 5
                                         Name = "Tackle"
                                         Cost = Seq.empty |> ResourcePool
                                         SpecialEffect = None

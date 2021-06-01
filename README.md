@@ -2884,3 +2884,96 @@ I then reference this `modifyGameStateFromPerformAttackEvent` in the update func
 This builds. I will now have to make sure my sample data has attacks and that the the UI is writed up to trigger these events.
 
 
+To wire up the UI I am able to modify the `renderAttackRow` to also include a button to exec an attack if it is available like:
+
+```
+let renderDamageInformationForAttack (attack: Attack) =
+    match attack.SpecialEffect with
+    | Some se ->
+        td [ ]
+                [
+                    p [] [ str (sprintf "%i" attack.Damage) ]
+                    p [] [ str se.Description ]
+                ]
+    | None ->
+        td [ ]
+                [
+                    p [] [ str (sprintf "%i" attack.Damage) ]
+                ]
+
+
+let renderAttackRowWithoutActions (attack: Attack) =
+        tr [ ]
+            [ td [ ]
+                [ str (textDescriptionForResourcePool attack.Cost) ]
+              td [ ]
+                [ str attack.Name ]
+              renderDamageInformationForAttack attack ]
+
+let renderAttackRow displayAttackButton canAttack availableResources gameId playerId inPlayCreatureId (attack: Attack) dispatch = // Lol this needs to be refactored
+    let execAttack =  (fun _ ->
+                                                    ({
+                                                        GameId = gameId
+                                                        PlayerId = playerId
+                                                        InPlayCreatureId = inPlayCreatureId
+                                                        Attack = attack
+                                                    } :  PerformAttackEvent) |> PerformAttack |>  dispatch)
+
+    let displayAttackButton = displayAttackButton && canAttack && (hasEnoughResources availableResources (Map.toList attack.Cost))
+
+    tr [ ]
+            [
+              td [ ]
+                [ str (textDescriptionForResourcePool attack.Cost) ]
+              td [ ]
+                [ str attack.Name ]
+              renderDamageInformationForAttack attack
+              td [ ]
+                [
+                    if displayAttackButton then
+                        button [
+                            Class "is-danger"
+                            OnClick execAttack
+                        ]
+                            [
+                                str "Exec"
+                            ]
+                    else
+                        str ""
+                ] ]
+```
+
+To populate the test database I am adding a "tackle" attack to all generated creatures in the `SampleCardDatabase`
+
+```
+let creatureCreatureConstructor creatureId name description primaryResource resourceCost health weaknesses =
+    let cardId = NonEmptyString.build creatureId |> Result.map CardId
+    let cardImageUrl = ImageUrlString.build (sprintf "/images/full/%s.png" creatureId)
+
+    match  cardId, cardImageUrl with
+    |  Ok cid, Ok imgUrl ->
+        Ok {
+                CardId = cid
+                ResourceCost =  resourceCost
+                Name = name
+                EnterSpecialEffects = None
+                ExitSpecialEffects = None
+                PrimaryResource = primaryResource
+                Creature =
+                      {
+                        Health= health
+                        Weaknesses=  weaknesses
+                        Attack = [
+                                    {
+                                        Damage = 5
+                                        Name = "Tackle"
+                                        Cost = Seq.empty |> ResourcePool
+                                        SpecialEffect = None
+                                    }
+                                 ]
+                      }
+                ImageUrl = imgUrl
+                Description =description
+            }
+    | _,_ -> Error "No"
+```
