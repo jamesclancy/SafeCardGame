@@ -2989,3 +2989,55 @@ I am not going to try to start pulling the decks, player info and cards from a d
 
 The first thing I am going to do for this is move the `SampleCardDatabase` to the Shared project from the Client project.
 
+Now I am researching ways to store the information on the server side.
+
+The first step appears to be mapping to and from a DTO. To start this I added a Dto module to the Shared project.
+
+I am going to be creating dtos for each of the domain types and writing functions to map from the DTOs to the Domain models.
+
+I started doing this with the idea of documenting the process I was going through. This turned into quite a bit of code but genreally I was creating Dtos for each domain types and adding a module for that class with `fromDomain` and `toDomain` functions which map to the dto and to a Result<the domain type, string> type. I implemented them like
+
+```
+module Player =
+
+    let fromDomain (person:Domain.Player) : PlayerDto =
+       {
+           PlayerId = person.PlayerId.ToString()
+           Name = person.Name
+           PlaymatUrl = person.PlaymatUrl.ToString()
+           LifePoints = person.RemainingLifePoints
+       }: PlayerDto
+
+    let toDomain (dto: PlayerDto) :Result<Domain.Player,string> =
+        CollectionManipulation.result {
+            let! playerId = dto.PlayerId |> NonEmptyString.build
+            let! name = dto.Name |> Ok
+            let! playmatUrl = dto.PlaymatUrl |> ImageUrlString.build
+            let! lifePoints = dto.LifePoints |> Ok
+
+            return {
+               PlayerId = playerId |> PlayerId
+               Name = name
+               PlaymatUrl = playmatUrl
+               RemainingLifePoints = lifePoints
+            }
+        }
+```
+
+You can note that the `toDomain` function utilizes a computational expression I had to added.
+
+the computational expression is defined like:
+
+```
+type ResultBuilder() =
+    member __.Return(x) = Ok x
+    member __.ReturnFrom(m: Result<_, _>) = m
+    member __.Bind(m, f) = Result.bind f m
+
+
+let result = new ResultBuilder()
+```
+
+This `ResultBuilder` allows multiple result checks to chained together using a series of `let!` bind opperations.
+
+

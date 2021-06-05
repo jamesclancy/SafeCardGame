@@ -60,7 +60,6 @@ module Domain =
     type Resource =
         Grass | Fire |  Water | Lightning | Psychic | Fighting | Colorless
 
-
     type PlayerBoard =
         {
             PlayerId: PlayerId
@@ -127,9 +126,10 @@ module Domain =
             ResourceAvailableOnFirstTurn: bool;
             ResourcesAdded: ResourcePool
         }
+    and GameStateTransformation = GameState -> GameState
     and GameStateSpecialEffect =
         {
-            Function: Func<GameState, GameState>
+            Function: GameStateTransformation
             Description: string
         }
     and Creature =
