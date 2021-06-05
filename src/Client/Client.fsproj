@@ -8,7 +8,6 @@
     <None Include="index.html" />
     <None Include="paket.references" />
     <Compile Include="Events.fs" />
-    <Compile Include="SampleCardDatabase.fs" />
     <Compile Include="GeneralUIHelpers.fs" />
     <Compile Include="PageLayoutElements.fs" />
     <Compile Include="Index.fs" />

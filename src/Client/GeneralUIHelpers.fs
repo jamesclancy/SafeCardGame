@@ -30,7 +30,7 @@ let renderAttackRowWithoutActions (attack: Attack) =
                 [ str attack.Name ]
               renderDamageInformationForAttack attack ]
 
-let renderAttackRow displayAttackButton canAttack availableResources gameId playerId inPlayCreatureId (attack: Attack) dispatch =
+let renderAttackRow displayAttackButton canAttack availableResources gameId playerId inPlayCreatureId (attack: Attack) dispatch = // Lol this needs to be refactored
     let execAttack =  (fun _ ->
                                                     ({
                                                         GameId = gameId

@@ -1,5 +1,7 @@
 module CollectionManipulation
 
+open System
+
 let predicateForOkayResults z =
                         match z with
                         | Ok _ -> true
@@ -17,3 +19,20 @@ let selectAllOkayResults (z : List<Result<'a,'b>>) =
     |> List.fold (@) []
 
 let shuffleG xs = xs |> Seq.sortBy (fun _ -> System.Guid.NewGuid())
+
+let appendToResultListOrMaintanFailure p n =
+    match p with
+    | Ok l ->
+        match n with
+        | Ok o -> o @ l |> Ok
+        | Error e -> Error e
+    | Error e -> Error e
+
+
+type ResultBuilder() =
+    member __.Return(x) = Ok x
+    member __.ReturnFrom(m: Result<_, _>) = m
+    member __.Bind(m, f) = Result.bind f m
+
+
+let result = new ResultBuilder()

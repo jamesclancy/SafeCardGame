@@ -191,7 +191,7 @@ let modifyGameStateFromDiscardCardEvent (ev: DiscardCardEvent) (gs: GameState) =
 
 let applyEffectIfDefinied effect gs =
     match effect with
-    | Some e -> e.Function.Invoke gs |> Ok
+    | Some e -> e.Function gs |> Ok
     | None  -> gs |> Ok
 
 let appendCreatureToPlayerBoard inPlayCreature playerBoard =
