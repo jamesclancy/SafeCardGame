@@ -5,6 +5,9 @@ open Fable.Remoting.Giraffe
 open Saturn
 
 open Shared
+open System.Text.Json
+open Dto
+open Shared.Domain
 
 type Storage () =
     let todos = ResizeArray<_>()
@@ -23,6 +26,19 @@ let storage = Storage()
 storage.AddTodo(Todo.create "Create new SAFE project") |> ignore
 storage.AddTodo(Todo.create "Write your app") |> ignore
 storage.AddTodo(Todo.create "Ship it !!!") |> ignore
+
+
+SampleCardDatabase.creatureCardDb |> Seq.map (fun c-> CharacterCard c)
+|> Seq.map Card.fromDomain
+|> Seq.map (fun c ->
+                    System.Console.Write(c)
+                    c
+)
+|> JsonSerializer.Serialize
+|> (fun c-> System.IO.File.WriteAllText("test.json", c))
+|> ignore
+
+
 
 let todosApi =
     { getTodos = fun () -> async { return storage.GetTodos() }

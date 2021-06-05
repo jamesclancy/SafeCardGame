@@ -44,10 +44,15 @@ module ImageUrlString =
 module Domain =
 
     type PlayerId = PlayerId of NonEmptyString
+        with override this.ToString() = match this with PlayerId s -> s.ToString()
     type CardInstanceId = CardInstanceId of NonEmptyString
+        with override this.ToString() = match this with CardInstanceId s -> s.ToString()
     type CardId = CardId of NonEmptyString
+        with override this.ToString() = match this with CardId s -> s.ToString()
     type InPlayCreatureId = InPlayCreatureId of NonEmptyString
+        with override this.ToString() = match this with InPlayCreatureId s -> s.ToString()
     type GameId = GameId of NonEmptyString
+        with override this.ToString() = match this with GameId s -> s.ToString()
 
     type Player =
         {

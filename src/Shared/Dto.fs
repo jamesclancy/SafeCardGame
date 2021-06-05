@@ -26,7 +26,7 @@ type AttackDto =
 
             Damage: int
             Name: string
-            Cost: IDictionary<string, int>
+            Cost: Dictionary<string, int>
             SpecialEffect: Option<SpecialEffectDto>
     }
 
@@ -36,7 +36,7 @@ type CardDto =
         Name: string;
         Description: string
         ImageUrl: string
-        ResourceCost: IDictionary<string, int>
+        ResourceCost: Dictionary<string, int>
         PrimaryResource: string
 
         CardType: CardTypeDto
@@ -49,7 +49,7 @@ type CardDto =
         Attack: AttackDto[]
 
         ResourceAvailableOnFirstTurn: Nullable<bool>
-        ResourcesAdded:IDictionary<string, int>
+        ResourcesAdded:Dictionary<string, int>
     }
 
 open Shared
@@ -108,14 +108,14 @@ module Resource =
 
 module ResourcePool =
 
-    let fromDomain (resource: Domain.ResourcePool) : IDictionary<string, int> =
+    let fromDomain (resource: Domain.ResourcePool) : Dictionary<string, int> =
         Map.toList resource
         |>  List.map (fun (x,y) -> (Resource.fromDomain x, y))
-        |> dict
+        |> dict |> Dictionary
 
-    let emptyDictionary : IDictionary<string, int> =
+    let emptyDictionary : Dictionary<string, int> =
         Seq.empty
-        |> dict
+        |> dict |> Dictionary
 
     let singleKeyValuePairFromString (resource: KeyValuePair<string, int>) : Result<Resource * int, string> =
         CollectionManipulation.result {
@@ -125,7 +125,7 @@ module ResourcePool =
 
         }
 
-    let fromDictionary  (resource: IDictionary<string, int>) =
+    let fromDictionary  (resource: Dictionary<string, int>) =
         resource
         |> Seq.map singleKeyValuePairFromString
         |> Seq.map (fun x ->

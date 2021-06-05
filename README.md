@@ -3041,3 +3041,34 @@ let result = new ResultBuilder()
 This `ResultBuilder` allows multiple result checks to chained together using a series of `let!` bind opperations.
 
 
+I was able to test serializing these dtos using System.Text.Json by adding code the Server project
+
+```
+SampleCardDatabase.creatureCardDb |> Seq.map (fun c-> CharacterCard c)
+|> Seq.map Card.fromDomain
+|> Seq.map (fun c ->
+                    System.Console.Write(c)
+                    c
+)
+|> JsonSerializer.Serialize
+|> (fun c-> System.IO.File.WriteAllText("test.json", c))
+|> ignore
+```
+
+It did serialize but I noticed the CardId and other Domain Ids needed to have their `ToString()` methods overloaded like:
+
+```
+module Domain =
+
+    type PlayerId = PlayerId of NonEmptyString
+        with override this.ToString() = match this with PlayerId s -> s.ToString()
+    type CardInstanceId = CardInstanceId of NonEmptyString
+        with override this.ToString() = match this with CardInstanceId s -> s.ToString()
+    type CardId = CardId of NonEmptyString
+        with override this.ToString() = match this with CardId s -> s.ToString()
+    type InPlayCreatureId = InPlayCreatureId of NonEmptyString
+        with override this.ToString() = match this with InPlayCreatureId s -> s.ToString()
+    type GameId = GameId of NonEmptyString
+        with override this.ToString() = match this with GameId s -> s.ToString()
+        ...
+```
