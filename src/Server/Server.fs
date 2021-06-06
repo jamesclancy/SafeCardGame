@@ -8,6 +8,7 @@ open Shared
 open System.Text.Json
 open Dto
 open Shared.Domain
+open DatabaseRepositories
 
 type Storage () =
     let todos = ResizeArray<_>()
@@ -22,23 +23,17 @@ type Storage () =
         else Error "Invalid todo"
 
 let storage = Storage()
-
-storage.AddTodo(Todo.create "Create new SAFE project") |> ignore
-storage.AddTodo(Todo.create "Write your app") |> ignore
-storage.AddTodo(Todo.create "Ship it !!!") |> ignore
+let playerRepository = PlayerRepository()
+let cardRepository = CardRepository()
 
 
-SampleCardDatabase.creatureCardDb |> Seq.map (fun c-> CharacterCard c)
-|> Seq.map Card.fromDomain
-|> Seq.map (fun c ->
-                    System.Console.Write(c)
-                    c
-)
-|> JsonSerializer.Serialize
-|> (fun c-> System.IO.File.WriteAllText("test.json", c))
-|> ignore
-
-
+let gameApi : ICardGameApi =
+    {
+        getPlayers =fun () -> async { return playerRepository.GetAll() }
+        getPlayer = fun playerId -> async { return playerRepository.Get(playerId) }
+        getCards =fun () -> async { return cardRepository.GetAll() }
+        getCard = fun cardId -> async { return cardRepository.Get(cardId) }
+    }
 
 let todosApi =
     { getTodos = fun () -> async { return storage.GetTodos() }
@@ -52,7 +47,7 @@ let todosApi =
 let webApp =
     Remoting.createApi()
     |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.fromValue todosApi
+    |> Remoting.fromValue gameApi
     |> Remoting.buildHttpHandler
 
 let app =

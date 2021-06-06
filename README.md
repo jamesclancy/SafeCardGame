@@ -3074,3 +3074,18 @@ module Domain =
 ```
 
 I am leaving this as the final commit in the branch `step-13-decks-to-database`. We were unable to actually write to a database but are able to serialize a list of cards to JSON now. This actually took an inordinate amount of time (like a week of share time) so I will continue on with this in step 14.
+
+## More Persistance and an API
+
+I am goign to try to save my data in Postgresq which I will hopefully be running a docker container.
+
+First I installed [DBeaver|https://dbeaver.io/download/] to administer/ access the new posteges instance.
+
+I then ran
+
+```
+docker pull postgres
+mkdir c:/data/safecardgamepostgresqldata
+
+
+```

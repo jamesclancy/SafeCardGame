@@ -39,21 +39,22 @@ type CardDto =
         ResourceCost: Dictionary<string, int>
         PrimaryResource: string
 
-        CardType: CardTypeDto
+        CardType: string
 
         EnterSpecialEffects: Option<SpecialEffectDto>
         ExitSpecialEffects: Option<SpecialEffectDto>
 
-        CreatureHealth: Nullable<int>
+        CreatureHealth: Option<int>
         Weaknesses: string[]
         Attack: AttackDto[]
 
-        ResourceAvailableOnFirstTurn: Nullable<bool>
+        ResourceAvailableOnFirstTurn: Option<bool>
         ResourcesAdded:Dictionary<string, int>
     }
 
 open Shared
 open Shared.Domain
+open System.Text.Json
 
 module Player =
 
@@ -135,6 +136,13 @@ module ResourcePool =
         |> Seq.fold CollectionManipulation.appendToResultListOrMaintanFailure (Ok [])
         |> Result.bind (fun x -> x |> Seq.ofList |> Domain.ResourcePool |> Ok)
 
+    let parseDtoFromJson (dtoJson :string) =
+        dtoJson |> JsonSerializer.Deserialize<Dictionary<string, int>>
+
+
+    let dtoToJson (dto :Dictionary<string, int>) =
+        dto |> JsonSerializer.Serialize
+
 module GameStateSpecialEffect =
 
     let fromDomain (specialEffect : Option<Domain.GameStateSpecialEffect>) : Option<SpecialEffectDto> =
@@ -161,6 +169,13 @@ module GameStateSpecialEffect =
                        Description = d.Description
                        Function = fun x -> x
                    } |> Some |> Ok
+
+    let parseDtoFromJson (text: string option) =
+        match text with
+        | None -> None
+        | Some s ->
+                JsonSerializer.Deserialize<SpecialEffectDto> s
+                |> Some
 
 module Attack =
 
@@ -194,18 +209,21 @@ module Attack =
                             | Error e ->  Error e)
         |> Seq.fold CollectionManipulation.appendToResultListOrMaintanFailure (Ok [])
 
+    let parseDtoFromJson (jsonValue : string) =
+        jsonValue
+        |> JsonSerializer.Deserialize<AttackDto[]>
 
 module Card =
 
     let getCreatureHealthFromCardDto (dto: CardDto) : Result<int, string> =
-        match dto.CreatureHealth.HasValue with
-        | false -> Error "Unable to parse creature health from card dto."
-        | true -> Ok dto.CreatureHealth.Value
+        match dto.CreatureHealth with
+        | None -> Error "Unable to parse creature health from card dto."
+        | Some s -> Ok s
 
     let getResourceCardResourcesAddedFirstTurnFromCardDto (dto: CardDto) : Result<bool, string> =
-        match dto.ResourceAvailableOnFirstTurn.HasValue with
-        | false -> Error "Unable to parse `add resources first turn` value from card dto."
-        | true -> Ok dto.ResourceAvailableOnFirstTurn.Value
+        match dto.ResourceAvailableOnFirstTurn with
+        | None -> Error "Unable to parse `add resources first turn` value from card dto."
+        | Some s -> Ok s
 
     let fromDomain (person:Domain.Card) : CardDto =
         match person with
@@ -218,16 +236,16 @@ module Card =
                     ResourceCost= cc.ResourceCost |> ResourcePool.fromDomain
                     PrimaryResource= cc.PrimaryResource |> Resource.fromDomain
 
-                    CardType= CardTypeDto.Character
+                    CardType= "Character"
 
                     EnterSpecialEffects = GameStateSpecialEffect.fromDomain cc.EnterSpecialEffects
                     ExitSpecialEffects = GameStateSpecialEffect.fromDomain cc.ExitSpecialEffects
 
-                    CreatureHealth = System.Nullable(cc.Creature.Health)
+                    CreatureHealth = Some cc.Creature.Health
                     Weaknesses = cc.Creature.Weaknesses |> List.map Resource.fromDomain |> List.toArray
                     Attack = cc.Creature.Attack |> List.map Attack.fromDomain |> List.toArray
 
-                    ResourceAvailableOnFirstTurn = System.Nullable()
+                    ResourceAvailableOnFirstTurn = None
                     ResourcesAdded = ResourcePool.emptyDictionary
                }: CardDto
         | ResourceCard cc ->
@@ -239,16 +257,16 @@ module Card =
                     ResourceCost= cc.ResourceCost |> ResourcePool.fromDomain
                     PrimaryResource= cc.PrimaryResource |> Resource.fromDomain
 
-                    CardType= CardTypeDto.Resource
+                    CardType= "Resource"
 
                     EnterSpecialEffects = GameStateSpecialEffect.fromDomain cc.EnterSpecialEffects
                     ExitSpecialEffects = GameStateSpecialEffect.fromDomain cc.ExitSpecialEffects
 
-                    CreatureHealth = System.Nullable()
+                    CreatureHealth = None
                     Weaknesses = Seq.empty |> Seq.toArray
                     Attack = Seq.empty |> Seq.toArray
 
-                    ResourceAvailableOnFirstTurn = System.Nullable(cc.ResourceAvailableOnFirstTurn)
+                    ResourceAvailableOnFirstTurn = Some cc.ResourceAvailableOnFirstTurn
                     ResourcesAdded = ResourcePool.fromDomain cc.ResourcesAdded
                }: CardDto
         | EffectCard cc ->
@@ -260,16 +278,16 @@ module Card =
                     ResourceCost= cc.ResourceCost |> ResourcePool.fromDomain
                     PrimaryResource= cc.PrimaryResource |> Resource.fromDomain
 
-                    CardType= CardTypeDto.Effect
+                    CardType= "Effect"
 
                     EnterSpecialEffects = GameStateSpecialEffect.fromDomain cc.EnterSpecialEffects
                     ExitSpecialEffects = GameStateSpecialEffect.fromDomain cc.ExitSpecialEffects
 
-                    CreatureHealth = System.Nullable()
+                    CreatureHealth = None
                     Weaknesses = Seq.empty |> Seq.toArray
                     Attack = Seq.empty |> Seq.toArray
 
-                    ResourceAvailableOnFirstTurn = System.Nullable()
+                    ResourceAvailableOnFirstTurn = None
                     ResourcesAdded = ResourcePool.emptyDictionary
                }: CardDto
 
@@ -284,7 +302,7 @@ module Card =
                     let! exitSpecialEffects = GameStateSpecialEffect.fromOptionalDto cc.ExitSpecialEffects
 
                     match cc.CardType with
-                    | CardTypeDto.Character ->
+                    | "Character" ->
 
                         let! creatureHealth = getCreatureHealthFromCardDto cc
                         let! weaknesses = cc.Weaknesses |> Resource.fromStringSeq
@@ -306,7 +324,7 @@ module Card =
                                 }
                         } |> CharacterCard
 
-                    | CardTypeDto.Effect ->
+                    | "Effect" ->
                         return {
                                 CardId = cardId |> CardId
                                 ImageUrl = imageUrl
@@ -317,7 +335,7 @@ module Card =
                                 EnterSpecialEffects = enterSpecialEffects
                                 ExitSpecialEffects = exitSpecialEffects
                         } |> EffectCard
-                    | CardTypeDto.Resource ->
+                    | "Resource" ->
                         let! resourcesAdded = cc.ResourcesAdded |> ResourcePool.fromDictionary
                         let! resourcesAvailableOnFirstTurn = getResourceCardResourcesAddedFirstTurnFromCardDto cc
 
