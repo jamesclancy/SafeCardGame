@@ -6,6 +6,11 @@ open Dto
 
 let connectionString = "Host=localhost; Database=postgres; Username=postgres; Password=trident1814;"
 
+let returnOkayResultOrRaiseError res =
+    match res with
+    | Ok s -> s
+    | Error e -> raise e
+
 type PlayerRepository () =
 
     let rowToDto (read : RowReader) : PlayerDto = {
@@ -16,25 +21,39 @@ type PlayerRepository () =
                 }
 
     member __.GetAll () =
+        async {
+         let! query =
             connectionString
             |> Sql.connect
             |> Sql.query "SELECT * FROM player"
-            |> Sql.execute rowToDto
+            |> Sql.executeAsync rowToDto
+            |> Async.AwaitTask
+
+         return query
             |> Seq.map Player.toDomain
+            |> Seq.toList
+            |> CollectionManipulation.selectAllOkayResults
+            |> List.toSeq
+        }
 
     member __.Get playerId =
+        async {
+         let! query =
             connectionString
             |> Sql.connect
             |> Sql.query "SELECT * FROM player WHERE player_id = @player_id"
             |> Sql.parameters [ "player_id", Sql.string playerId ]
-            |> Sql.executeRow rowToDto
+            |> Sql.executeRowAsync rowToDto
+            |> Async.AwaitTask
+
+         return query
             |> Player.toDomain
+        }
 
 type CardRepository () =
 
     let rowToDto (read : RowReader) : CardDto =
             {
-
                 CardId= read.string "card_id"
                 Name = read.string "card_name"
                 Description = read.string "card_description"
@@ -53,16 +72,30 @@ type CardRepository () =
             }
 
     member __.GetAll () =
+        async {
+         let! query =
             connectionString
             |> Sql.connect
             |> Sql.query "SELECT * FROM card"
-            |> Sql.execute rowToDto
+            |> Sql.executeAsync rowToDto
+            |> Async.AwaitTask
+
+         return query
             |> Seq.map Card.toDomain
+            |> Seq.toList
+            |> CollectionManipulation.selectAllOkayResults
+            |> List.toSeq
+        }
 
     member __.Get cardId =
+        async {
+         let! query =
             connectionString
             |> Sql.connect
             |> Sql.query "SELECT * FROM card WHERE card_id = @card_id"
             |> Sql.parameters [ "card_id", Sql.string cardId ]
-            |> Sql.executeRow rowToDto
-            |> Card.toDomain
+            |> Sql.executeRowAsync rowToDto
+            |> Async.AwaitTask
+
+         return query |> Card.toDomain
+        }

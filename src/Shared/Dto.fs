@@ -213,6 +213,8 @@ module Attack =
         jsonValue
         |> JsonSerializer.Deserialize<AttackDto[]>
 
+
+
 module Card =
 
     let getCreatureHealthFromCardDto (dto: CardDto) : Result<int, string> =

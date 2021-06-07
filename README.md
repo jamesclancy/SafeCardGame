@@ -3086,6 +3086,45 @@ I then ran
 ```
 docker pull postgres
 mkdir c:/data/safecardgamepostgresqldata
-
+docker run -d --name dev-postgres -e POSTGRES_PASSWORD=trident1814 -v c:/data/safecardgamepostgresqldata/:/var/lib/postgresql/data -p 5432:5432 postgres
 
 ```
+
+
+I was then able to connect to this postgres intance via DBever and create two tables with the definitions:
+
+```
+CREATE TABLE public.card (
+	card_id varchar(256) NOT NULL,
+	card_name varchar(256) NOT NULL,
+	card_description varchar(500) NULL,
+	card_image_url varchar(500) NOT NULL,
+	card_thumbnail_image_url varchar(500) NOT NULL,
+	card_primary_resource varchar(256) NOT NULL,
+    card_type varchar(256) NOT NULL,
+    card_enter_special_effects varchar NULL,
+    card_exit_special_effects varchar NULL,
+    card_creature_health int NULL,
+    card_creature_weaknesses varchar NULL,
+    card_creature_attacks varchar NULL,
+    card_resources_available_on_first_turn bit NULL,
+    card_resources_added  varchar NULL,
+	CONSTRAINT card_pk PRIMARY KEY (card_id),
+	CONSTRAINT card_unique_name UNIQUE (card_name)
+);
+
+CREATE TABLE public.player (
+	player_id varchar(256) NOT NULL,
+	player_name varchar(256) NOT NULL,
+	player_playmat_url varchar(500) NULL,
+	CONSTRAINT player_pk PRIMARY KEY (player_id),
+	CONSTRAINT player_unique_name UNIQUE (player_name)
+);
+```
+
+After this I added `Npgsql.FSharp` to the Server project by running `dotnet add package Npgsql.FSharp`.
+
+using this library I was able to add a module to my Server project named: `DatabaseRepositories`.
+
+In this module I defined
+

@@ -29,8 +29,8 @@ type ITodosApi =
 
 type ICardGameApi =
     {
-        getPlayers : unit -> Async<Result<Player, string> seq>
+        getPlayers : unit -> Async<Player seq>
         getPlayer: string -> Async<Result<Player, string>>
-        getCards: unit -> Async<Result<Card, string> seq>
-        getCard: string -> Async<Result<Card, string>>
+        getCards: unit -> Async<Card seq>
+        getCard: string -> Async<Result<Card,string>>
     }
