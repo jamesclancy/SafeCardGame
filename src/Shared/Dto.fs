@@ -1,6 +1,7 @@
 module Dto
 open System
 open System.Collections.Generic
+open Newtonsoft.Json
 
 
 type PlayerDto =
@@ -10,10 +11,6 @@ type PlayerDto =
         PlaymatUrl: string
         LifePoints: int
     }
-
-type CardTypeDto =
-
-    Character | Effect | Resource
 
 type SpecialEffectDto =
     {
@@ -36,6 +33,7 @@ type CardDto =
         Name: string;
         Description: string
         ImageUrl: string
+        ThumbnailImageUrl: string
         ResourceCost: Dictionary<string, int>
         PrimaryResource: string
 
@@ -54,7 +52,6 @@ type CardDto =
 
 open Shared
 open Shared.Domain
-open System.Text.Json
 
 module Player =
 
@@ -107,6 +104,13 @@ module Resource =
         |> Seq.fold CollectionManipulation.appendToResultListOrMaintanFailure (Ok [])
         |> Result.bind (fun x -> x |> Seq.ofList |> Ok)
 
+    let parseListFromJson (resources: string) : string[] =
+        if String.IsNullOrWhiteSpace resources then
+            Array.empty
+        else
+            resources
+            |> JsonConvert.DeserializeObject<string[]>
+
 module ResourcePool =
 
     let fromDomain (resource: Domain.ResourcePool) : Dictionary<string, int> =
@@ -130,18 +134,18 @@ module ResourcePool =
         resource
         |> Seq.map singleKeyValuePairFromString
         |> Seq.map (fun x ->
-                            match x with
-                            | Ok y -> Ok [y]
-                            | Error e ->  Error e)
+                        match x with
+                        | Ok y -> Ok [y]
+                        | Error e ->  Error e)
         |> Seq.fold CollectionManipulation.appendToResultListOrMaintanFailure (Ok [])
         |> Result.bind (fun x -> x |> Seq.ofList |> Domain.ResourcePool |> Ok)
 
     let parseDtoFromJson (dtoJson :string) =
-        dtoJson |> JsonSerializer.Deserialize<Dictionary<string, int>>
+        dtoJson |> JsonConvert.DeserializeObject<Dictionary<string, int>>
 
 
     let dtoToJson (dto :Dictionary<string, int>) =
-        dto |> JsonSerializer.Serialize
+        dto |> JsonConvert.SerializeObject
 
 module GameStateSpecialEffect =
 
@@ -174,8 +178,11 @@ module GameStateSpecialEffect =
         match text with
         | None -> None
         | Some s ->
-                JsonSerializer.Deserialize<SpecialEffectDto> s
-                |> Some
+                if String.IsNullOrWhiteSpace s then
+                    None
+                else
+                    JsonConvert.DeserializeObject<SpecialEffectDto> s
+                    |> Some
 
 module Attack =
 
@@ -211,9 +218,7 @@ module Attack =
 
     let parseDtoFromJson (jsonValue : string) =
         jsonValue
-        |> JsonSerializer.Deserialize<AttackDto[]>
-
-
+        |> JsonConvert.DeserializeObject<AttackDto[]>
 
 module Card =
 
@@ -235,6 +240,7 @@ module Card =
                     Name = cc.Name
                     Description = cc.Description
                     ImageUrl = (cc.ImageUrl.ToString())
+                    ThumbnailImageUrl = (cc.ImageUrl.ToString())
                     ResourceCost= cc.ResourceCost |> ResourcePool.fromDomain
                     PrimaryResource= cc.PrimaryResource |> Resource.fromDomain
 
@@ -256,6 +262,7 @@ module Card =
                     Name = cc.Name
                     Description = cc.Description
                     ImageUrl = (cc.ImageUrl.ToString())
+                    ThumbnailImageUrl = (cc.ImageUrl.ToString())
                     ResourceCost= cc.ResourceCost |> ResourcePool.fromDomain
                     PrimaryResource= cc.PrimaryResource |> Resource.fromDomain
 
@@ -277,6 +284,7 @@ module Card =
                     Name = cc.Name
                     Description = cc.Description
                     ImageUrl = (cc.ImageUrl.ToString())
+                    ThumbnailImageUrl = (cc.ImageUrl.ToString())
                     ResourceCost= cc.ResourceCost |> ResourcePool.fromDomain
                     PrimaryResource= cc.PrimaryResource |> Resource.fromDomain
 

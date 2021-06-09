@@ -18,6 +18,16 @@ let selectAllOkayResults (z : Result<'a,'b> seq) =
     |> Seq.map selectorForOkayResults
     |> Seq.fold (@) []
 
+
+let selectAllOkayResultsAsync z = // (z : Async<Result<'a,'b> seq>) =
+    async {
+        let! z' = z;
+        return z'
+        |> Seq.filter predicateForOkayResults
+        |> Seq.map selectorForOkayResults
+        |> Seq.fold (@) []
+    }
+
 let shuffleG xs = xs |> Seq.sortBy (fun _ -> System.Guid.NewGuid())
 
 let appendToResultListOrMaintanFailure p n =

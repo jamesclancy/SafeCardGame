@@ -3126,5 +3126,7 @@ After this I added `Npgsql.FSharp` to the Server project by running `dotnet add 
 
 using this library I was able to add a module to my Server project named: `DatabaseRepositories`.
 
-In this module I defined
+In this module I defined two repositories, a `CardRepository` and a `PlayerRepository` each includes methods to map dtos to the database table row, a select all and a select by id.
+
+I then pulled some other TCG card data in JSON and transformed that into a csv file that matched the database and imported (not included in repo but you can fnd similaron google/github).
 

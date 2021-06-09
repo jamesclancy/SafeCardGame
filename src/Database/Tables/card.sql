@@ -11,7 +11,7 @@ CREATE TABLE public.card (
     card_creature_health int NULL,
     card_creature_weaknesses varchar NULL,
     card_creature_attacks varchar NULL,
-    card_resources_available_on_first_turn bit NULL,
+    card_resources_available_on_first_turn boolean NULL,
     card_resources_added  varchar NULL,
 	CONSTRAINT card_pk PRIMARY KEY (card_id),
 	CONSTRAINT card_unique_name UNIQUE (card_name)
