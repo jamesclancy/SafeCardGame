@@ -2989,7 +2989,7 @@ I am not going to try to start pulling the decks, player info, and cards from a 
 
 The first thing I am going to do for this is moving the `SampleCardDatabase` to the Shared project from the Client project.
 
-Now I am researching ways to store the information on the server side.
+Now I am researching ways to store the information on the server-side.
 
 The first step appears to be mapping to and from a DTO. To start this I added a Dto module to the Shared project.
 
@@ -3077,9 +3077,9 @@ I am leaving this as the final commit in the branch `step-13-decks-to-database`.
 
 ## More Persistance and an API
 
-I am goign to try to save my data in Postgresq which I will hopefully be running a docker container.
+I am going to try to save my data in Postgresq which I will hopefully be running a docker container.
 
-First I installed [DBeaver|https://dbeaver.io/download/] to administer/ access the new posteges instance.
+First I installed [DBeaver|https://dbeaver.io/download/] to administer/ access the new Postgres instance.
 
 I then ran
 
@@ -3091,7 +3091,7 @@ docker run -d --name dev-postgres -e POSTGRES_PASSWORD=trident1814 -v c:/data/sa
 ```
 
 
-I was then able to connect to this postgres intance via DBever and create two tables with the definitions:
+I was then able to connect to this Postgres instance via DBever and create two tables with the definitions:
 
 ```
 CREATE TABLE public.card (
@@ -3122,15 +3122,15 @@ CREATE TABLE public.player (
 );
 ```
 
-After this I added `Npgsql.FSharp` to the Server project by running `dotnet add package Npgsql.FSharp`.
+After this, I added `Npgsql.FSharp` to the Server project by running `dotnet add package Npgsql.FSharp`.
 
 using this library I was able to add a module to my Server project named: `DatabaseRepositories`.
 
-In this module I defined two repositories, a `CardRepository` and a `PlayerRepository` each includes methods to map dtos to the database table row, a select all and a select by id.
+In this module, I defined two repositories, a `CardRepository` and a `PlayerRepository` each includes methods to map DTOs to the database table row, a select all, and a select by id.
 
-I then pulled some other TCG card data in JSON and transformed that into a csv file that matched the database and imported (not included in repo but you can fnd similaron google/github).
+I then pulled some other TCG card data in JSON and transformed that into a CSV file that matched the database and imported it (not included in the repo but you can find similar on google/github).
 
-I also added a deck_card_association and deck sql tables.
+I also added a deck_card_association and deck SQL tables.
 
 ```
 CREATE TABLE public.deck_card_association (
@@ -3158,9 +3158,9 @@ CREATE TABLE public.deck (
 
 ```
 
-I then similarly bulk pulled some json info for an exitsting tcg game and added it to the database.
+I then similarly bulk pulled some json info for an existing TCG game and added it to the database.
 
-I now will have to impliment a deck repository and apis.
+I now will have to implement a deck repository and APIs.
 
 These I will implement in the next part.
 
