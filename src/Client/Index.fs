@@ -8,6 +8,7 @@ open Shared.Domain
 open Shared.Domain
 open Operators
 open Events
+open Fable.Core
 
 
 
@@ -19,45 +20,61 @@ let (>=>) switch1 switch2 x =
     | Ok s -> switch2 s
     | Error f -> Error f
 
-let testCreatureCardGenerator cardInstanceIdStr =
-    let cardInstanceId = NonEmptyString.build cardInstanceIdStr |> Result.map CardInstanceId
 
-    match cardInstanceId with
-    | Ok id ->
-        let card = SampleCardDatabase.creatureCardDb |> CollectionManipulation.shuffleG |> Seq.head
-        Ok  {
-                CardInstanceId  =  id
-                Card =  card |> CharacterCard
-            }
-    | _ ->
-        sprintf "Unable to create card instance for %s" cardInstanceIdStr
-        |> Error
+let cardGameServer =
+    Remoting.createApi()
+    |> Remoting.withRouteBuilder Route.builder
+    |> Remoting.buildProxy<ICardGameApi>
+
+let testCreatureCardGenerator cardInstanceIdStr =
+    async {
+        let cardInstanceId = NonEmptyString.build cardInstanceIdStr |> Result.map CardInstanceId
+
+        match cardInstanceId with
+        | Ok id ->
+            let! card = cardGameServer.getCards ()
+
+            return Ok  {
+                    CardInstanceId  =  id
+                    Card =  card |> CollectionManipulation.shuffleG |> Seq.head
+                }
+        | _ ->
+            return (sprintf "Unable to create card instance for %s" cardInstanceIdStr |> Error)
+
+    }
 
 
 let testResourceCardGenerator cardInstanceIdStr =
+    async {
     let cardInstanceId = NonEmptyString.build cardInstanceIdStr |> Result.map CardInstanceId
 
     match cardInstanceId with
     | Ok id ->
         let card = SampleCardDatabase.resourceCardDb |> CollectionManipulation.shuffleG |> Seq.head
-        Ok  {
+        return Ok  {
                 CardInstanceId  =  id
                 Card =  card |> ResourceCard
             }
     | _ ->
-        sprintf "Unable to create card instance for %s" cardInstanceIdStr
-        |> Error
+        return sprintf "Unable to create card instance for %s" cardInstanceIdStr |> Error
+    }
+
+let createRandomCardForSequence x =
+                        if x % 2 = 1 then
+                            testCreatureCardGenerator (sprintf "cardInstance-%i" x)
+                        else
+                            testResourceCardGenerator (sprintf "cardInstance-%i" x)
 
 let testDeckSeqGenerator (numberOfCards :int) =
-    seq { 0 .. (numberOfCards - 1)}
-    |> Seq.map (fun x ->
-                    if x % 2 = 1 then
-                        testCreatureCardGenerator (sprintf "cardInstance-%i" x)
-                    else
-                        testResourceCardGenerator (sprintf "cardInstance-%i" x)
-                    )
-    |> List.ofSeq
-    |> CollectionManipulation.selectAllOkayResults
+    async {
+      let! values =
+        seq { 0 .. (numberOfCards - 1)}
+        |> Seq.map createRandomCardForSequence
+        |> Async.Parallel
+        |> CollectionManipulation.selectAllOkayResultsAsync
+
+      return values
+    }
 
 let emptyPlayerBoard (player : Player) =
         Ok  {
@@ -287,6 +304,37 @@ let modifyGameStateFromPlayCardEvent (ev: PlayCardEvent) (gs: GameState) =
         >>= (playCardFromBoard  ev.CardInstanceId ev.PlayerId gs)
         |> applyErrorResultToGamesState gs
 
+
+let createIniialGameStateFromServer gameId player1Id player2Id =
+    async {
+
+          let! player1 = cardGameServer.getPlayer(player1Id)
+          let! player2 = cardGameServer.getPlayer(player2Id)
+          let! deck1 = testDeckSeqGenerator 60
+          let! deck2 = testDeckSeqGenerator 60
+
+          match player1, player2 with
+          | Ok p1, Ok p2 ->
+               return {
+                    GameId = gameId
+                    Players =  [
+                                p1.PlayerId, p1;
+                                p2.PlayerId, p2
+                               ] |> Map.ofList
+                    PlayerOne = p1.PlayerId
+                    PlayerTwo = p2.PlayerId
+                    Decks = [   (p1.PlayerId, { TopCardsExposed = 0; Cards = deck1 });
+                                (p2.PlayerId, { TopCardsExposed = 0; Cards = deck2 })]
+                             |> Map.ofSeq
+                 } |> StartGame
+          | _, _ ->
+                    return {
+                        GameId =  gameId
+                        Winner = None
+                        Message = None
+                    } |> GameWon
+    }
+
 let init =
     let player1 = createPlayer "Player1" "Player1" 10 "https://picsum.photos/id/1000/2500/1667?blur=5"
     let player2 = createPlayer "Player2" "Player2" 10 "https://picsum.photos/id/10/2500/1667?blur=5"
@@ -315,22 +363,8 @@ let init =
                 PlayerOne = p1.PlayerId
                 PlayerTwo = p2.PlayerId
             }
-
-          let startGameEvent =
-            {
-                GameId = g
-                Players =  [
-                            p1.PlayerId, p1;
-                            p2.PlayerId, p2
-                           ] |> Map.ofList
-                PlayerOne = p1.PlayerId
-                PlayerTwo = p2.PlayerId
-                Decks = [   (p1.PlayerId, { TopCardsExposed = 0; Cards = testDeckSeqGenerator 60 });
-                            (p2.PlayerId, { TopCardsExposed = 0; Cards = testDeckSeqGenerator 60 })]
-                         |> Map.ofSeq
-            } |> StartGame
-          let cmd = Cmd.ofMsg startGameEvent
-          Ok (model, cmd)
+          let cmd = Cmd.OfAsync.result (createIniialGameStateFromServer g "001" "002")
+          Ok (model, cmd )
         | _ -> "Failed to create player boards" |> Error
     | _ -> "Failed to create players" |> Error
 

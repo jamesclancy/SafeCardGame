@@ -8,51 +8,23 @@ open Shared
 open System.Text.Json
 open Dto
 open Shared.Domain
+open DatabaseRepositories
 
-type Storage () =
-    let todos = ResizeArray<_>()
+let playerRepository = PlayerRepository()
+let cardRepository = CardRepository()
 
-    member __.GetTodos () =
-        List.ofSeq todos
-
-    member __.AddTodo (todo: Todo) =
-        if Todo.isValid todo.Description then
-            todos.Add todo
-            Ok ()
-        else Error "Invalid todo"
-
-let storage = Storage()
-
-storage.AddTodo(Todo.create "Create new SAFE project") |> ignore
-storage.AddTodo(Todo.create "Write your app") |> ignore
-storage.AddTodo(Todo.create "Ship it !!!") |> ignore
-
-
-SampleCardDatabase.creatureCardDb |> Seq.map (fun c-> CharacterCard c)
-|> Seq.map Card.fromDomain
-|> Seq.map (fun c ->
-                    System.Console.Write(c)
-                    c
-)
-|> JsonSerializer.Serialize
-|> (fun c-> System.IO.File.WriteAllText("test.json", c))
-|> ignore
-
-
-
-let todosApi =
-    { getTodos = fun () -> async { return storage.GetTodos() }
-      addTodo =
-        fun todo -> async {
-            match storage.AddTodo todo with
-            | Ok () -> return todo
-            | Error e -> return failwith e
-        } }
+let gameApi : ICardGameApi =
+    {
+        getPlayers = fun () ->  playerRepository.GetAll()
+        getPlayer = fun playerId ->  playerRepository.Get(playerId)
+        getCards = fun () -> cardRepository.GetAll()
+        getCard = fun cardId -> cardRepository.Get(cardId)
+    }
 
 let webApp =
     Remoting.createApi()
     |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.fromValue todosApi
+    |> Remoting.fromValue gameApi
     |> Remoting.buildHttpHandler
 
 let app =

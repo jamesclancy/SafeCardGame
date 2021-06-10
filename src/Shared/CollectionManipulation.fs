@@ -12,11 +12,21 @@ let selectorForOkayResults z =
                         | Ok x ->  [ x ]
                         | _ -> []
 
-let selectAllOkayResults (z : List<Result<'a,'b>>) =
+let selectAllOkayResults (z : Result<'a,'b> seq) =
     z
-    |> List.filter predicateForOkayResults
-    |> List.map selectorForOkayResults
-    |> List.fold (@) []
+    |> Seq.filter predicateForOkayResults
+    |> Seq.map selectorForOkayResults
+    |> Seq.fold (@) []
+
+
+let selectAllOkayResultsAsync z = // (z : Async<Result<'a,'b> seq>) =
+    async {
+        let! z' = z;
+        return z'
+        |> Seq.filter predicateForOkayResults
+        |> Seq.map selectorForOkayResults
+        |> Seq.fold (@) []
+    }
 
 let shuffleG xs = xs |> Seq.sortBy (fun _ -> System.Guid.NewGuid())
 
