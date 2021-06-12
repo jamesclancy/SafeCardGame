@@ -3,11 +3,11 @@ namespace Shared
 open System
 open System.IO
 open Domain
+open Dto
 
 type Todo =
     { Id : Guid
       Description : string }
-
 
 module Todo =
     let isValid (description: string) =
@@ -33,4 +33,6 @@ type ICardGameApi =
         getPlayer: string -> Async<Result<Player, string>>
         getCards: unit -> Async<Card seq>
         getCard: string -> Async<Result<Card,string>>
+        getDecks: unit -> Async<PreCreatedDeckDto seq>
+        getCardsForDeck: string ->  Async<Card seq>
     }

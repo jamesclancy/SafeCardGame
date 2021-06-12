@@ -1,8 +1,12 @@
 module Dto
 open System
 open System.Collections.Generic
-open Newtonsoft.Json
 
+type PreCreatedDeckDto =
+    {
+        DeckId: string
+        Name: string
+    }
 
 type PlayerDto =
     {
@@ -52,6 +56,7 @@ type CardDto =
 
 open Shared
 open Shared.Domain
+open System.Text.Json
 
 module Player =
 
@@ -103,14 +108,6 @@ module Resource =
                             | Error e ->  Error e)
         |> Seq.fold CollectionManipulation.appendToResultListOrMaintanFailure (Ok [])
         |> Result.bind (fun x -> x |> Seq.ofList |> Ok)
-
-    let parseListFromJson (resources: string) : string[] =
-        if String.IsNullOrWhiteSpace resources then
-            Array.empty
-        else
-            resources
-            |> JsonConvert.DeserializeObject<string[]>
-
 module ResourcePool =
 
     let fromDomain (resource: Domain.ResourcePool) : Dictionary<string, int> =
@@ -140,12 +137,6 @@ module ResourcePool =
         |> Seq.fold CollectionManipulation.appendToResultListOrMaintanFailure (Ok [])
         |> Result.bind (fun x -> x |> Seq.ofList |> Domain.ResourcePool |> Ok)
 
-    let parseDtoFromJson (dtoJson :string) =
-        dtoJson |> JsonConvert.DeserializeObject<Dictionary<string, int>>
-
-
-    let dtoToJson (dto :Dictionary<string, int>) =
-        dto |> JsonConvert.SerializeObject
 
 module GameStateSpecialEffect =
 
@@ -173,16 +164,6 @@ module GameStateSpecialEffect =
                        Description = d.Description
                        Function = fun x -> x
                    } |> Some |> Ok
-
-    let parseDtoFromJson (text: string option) =
-        match text with
-        | None -> None
-        | Some s ->
-                if String.IsNullOrWhiteSpace s then
-                    None
-                else
-                    JsonConvert.DeserializeObject<SpecialEffectDto> s
-                    |> Some
 
 module Attack =
 
@@ -216,9 +197,6 @@ module Attack =
                             | Error e ->  Error e)
         |> Seq.fold CollectionManipulation.appendToResultListOrMaintanFailure (Ok [])
 
-    let parseDtoFromJson (jsonValue : string) =
-        jsonValue
-        |> JsonConvert.DeserializeObject<AttackDto[]>
 
 module Card =
 
@@ -333,18 +311,6 @@ module Card =
                                         Attack = attack
                                 }
                         } |> CharacterCard
-
-                    | "Effect" ->
-                        return {
-                                CardId = cardId |> CardId
-                                ImageUrl = imageUrl
-                                Description = cc.Description
-                                Name = cc.Name
-                                ResourceCost = resourceCost
-                                PrimaryResource = primaryResource
-                                EnterSpecialEffects = enterSpecialEffects
-                                ExitSpecialEffects = exitSpecialEffects
-                        } |> EffectCard
                     | "Resource" ->
                         let! resourcesAdded = cc.ResourcesAdded |> ResourcePool.fromDictionary
                         let! resourcesAvailableOnFirstTurn = getResourceCardResourcesAddedFirstTurnFromCardDto cc
@@ -361,4 +327,17 @@ module Card =
                                 ResourcesAdded =resourcesAdded
                                 ResourceAvailableOnFirstTurn = resourcesAvailableOnFirstTurn
                         } |> ResourceCard
+                    | "Effect" ->
+                        return {
+                                CardId = cardId |> CardId
+                                ImageUrl = imageUrl
+                                Description = cc.Description
+                                Name = cc.Name
+                                ResourceCost = resourceCost
+                                PrimaryResource = primaryResource
+                                EnterSpecialEffects = enterSpecialEffects
+                                ExitSpecialEffects = exitSpecialEffects
+                        } |> EffectCard
+
+                    
         }

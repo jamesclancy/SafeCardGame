@@ -425,7 +425,16 @@ let renderThumbnailCharacterCard (card: CharacterCard) =
                                     Alt card.Name
                                     Class "is-fullwidth" ] ]
 let renderThumbnailResourceCard (card: ResourceCard) =
-     p [Class "title is-1"] [str (getSymbolForResource card.PrimaryResource)]
+        figure [ Class "image is-64x64" ]
+                            [ img [ Src (card.ImageUrl.ToString())
+                                    Alt card.Name
+                                    Class "is-fullwidth" ] ]
+
+let renderThumbnailEffectCard (card: EffectCard) =
+        figure [ Class "image is-64x64" ]
+                            [ img [ Src (card.ImageUrl.ToString())
+                                    Alt card.Name
+                                    Class "is-fullwidth" ] ]
 
 let renderResourceCard (card: ResourceCard) =
     [
@@ -447,23 +456,37 @@ let renderResourceCard (card: ResourceCard) =
                              displayCardSpecialEffectDetailIfPresent "On Exit Playing Field" card.ExitSpecialEffects
                            ] ] ]
 
+let renderEffectCard (card: EffectCard) =
+    [
+            header [ Class "card-header" ]
+                       [ p [ Class "card-header-title" ]
+                           [ str card.Name ]
+                         p [ Class "card-header-icon" ]
+                           [ str (textDescriptionForResourcePool card.ResourceCost) ] ]
+            div [ Class "card-image" ]
+                       [ figure [ Class "image is-4by3" ]
+                           [ img [ Src (card.ImageUrl.ToString())
+                                   Alt card.Name
+                                   Class "is-fullwidth" ] ] ]
+            div [ Class "card-content" ]
+                       [ div [ Class "content" ]
+                           [ p [ Class "is-italic" ]
+                               [ str card.Description ]
+                             displayCardSpecialEffectDetailIfPresent "On Enter Playing Field" card.EnterSpecialEffects
+                             displayCardSpecialEffectDetailIfPresent "On Exit Playing Field" card.ExitSpecialEffects
+                           ] ] ]
 
 let renderCardDetailForHand (card: Card) : ReactElement list=
     match card with
     | CharacterCard c -> renderCharacterCard c
     | ResourceCard rc -> renderResourceCard rc
-    | _ ->
-         [
-            strong [] [ str "IDK" ]
-         ]
+    | EffectCard ec -> renderEffectCard ec
 
 let renderCardThumbnailForHand (card: Card) : ReactElement =
     match card with
     | CharacterCard c -> renderThumbnailCharacterCard c
     | ResourceCard rc -> renderThumbnailResourceCard rc
-    | _ ->
-            strong [] [ str "IDK" ]
-
+    | EffectCard ec -> renderThumbnailEffectCard ec
 
 let isCardZoomed playerBoard cardInstanceId =
     match playerBoard.ZoomedCard with
