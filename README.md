@@ -3383,3 +3383,8 @@ let rec decrementResourcesFromPlayerBoard playerBoard resourcePool =
 This now appears to be a somewhat crappy but playable game besides not having a win condition. I need to add the logic to actually cause a player to lose when they have zero or less health. (obviously currently you can do that first turn depending on the cards you draw which makes the game more exciting?)
 
 I am leaving this as the final commit in the branch `step-15-deck-repository`.
+
+## Moving Stuff around and writing tests
+
+A number of times during this process I have encountered stupid issues which could have been avoided had a spent a little time refactoring & writing tests. I didn't do this as I didn't think this would be a complicated or time consuming of a project. Since the game psuedo works now I am going to to take the time to do some house keeping.
+

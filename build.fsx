@@ -1,4 +1,10 @@
-#r "paket: groupref build //"
+#r "paket:
+nuget FSharp.Core
+nuget Fake.Core.ReleaseNotes prerelease
+nuget Fake.Core.Target prerelease
+nuget Fake.DotNet.Cli prerelease
+nuget Fake.IO.FileSystem prerelease
+nuget Farmer"
 #load "./.fake/build.fsx/intellisense.fsx"
 #r "netstandard"
 
@@ -7,6 +13,8 @@ open Fake.DotNet
 open Fake.IO
 open Farmer
 open Farmer.Builders
+open Fake.IO.FileSystemOperators
+open Fake.IO.Globbing.Operators
 
 Target.initEnvironment ()
 

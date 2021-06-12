@@ -1,2 +1,5 @@
 Saturn
+Saturn.Extensions.Authorization
 Fable.Remoting.Giraffe
+Newtonsoft.Json
+Npgsql.FSharp

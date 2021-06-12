@@ -2,12 +2,10 @@ module App
 
 open Elmish
 open Elmish.React
-open Events
 
 #if DEBUG
 open Elmish.Debug
 open Elmish.HMR
-open Index
 #endif
 
 match Index.init with
