@@ -3158,7 +3158,7 @@ CREATE TABLE public.deck (
 
 ```
 
-I then similarly bulk pulled some json info for an existing TCG game and added it to the database.
+I then similarly bulk pulled some JSON info for an existing TCG game and added it to the database.
 
 I now will have to implement a deck repository and APIs.
 
@@ -3168,11 +3168,11 @@ I am leaving this as the final commit in branch `step-14-continue-working-on-sav
 
 ## Pulling premade decks from the database
 
-I first implemented the repositories. While doing this I had to move the json parsing from the shared dtos to the server project (as fable doesn't support newtonsoft json/ it performs weirdly). Additionally I pulled out the row to dto mappings into a shared module in the server project.
+I first implemented the repositories. While doing this I had to move the JSON parsing from the shared DTOs to the server project (as fable doesn't support Newtonsoft JSON/ it performs weirdly). Additionally, I pulled out the row to DTO mappings into a shared module in the server project.
 
 When implimenting the repository for pulling cards from a deck I ordered by random to `shuffle` the deck on load like `select c.* from card c inner join deck_card_association dca on dca.card_id  = c.card_id where dca.deck_id = @deck_id order by RANDOM()`.
 
-I was then able to update the api to include new methods for the premade decks like:
+I was then able to update the API to include new methods for the premade decks like:
 
 ```
 type ICardGameApi =
@@ -3185,7 +3185,7 @@ type ICardGameApi =
         getCardsForDeck: string ->  Async<Card seq>
     }
 ```
-which I then imlimeneted like:
+which I then implemented like:
 ```
 let playerRepository = PlayerRepository()
 let cardRepository = CardRepository()
@@ -3202,7 +3202,7 @@ let gameApi : ICardGameApi =
     }
 ```
 
-I was then able to update the Index on the client to use this api:
+I was then able to update the Index on the client to use this API:
 
 ```
 let createCardInstanceForCard (card : Card) =
@@ -3229,7 +3229,7 @@ let testDeckSeqGenerator (numberOfCards :int) =
 
 ```
 
-This now appears to work but some of the cards are rending weird. To fix this I updated hte PageLayElements with:
+This now appears to work but some of the cards are rending weird. To fix this I updated the PageLayElements with:
 
 ```
 let renderThumbnailResourceCard (card: ResourceCard) =
@@ -3297,9 +3297,9 @@ let renderCardThumbnailForHand (card: Card) : ReactElement =
     | EffectCard ec -> renderThumbnailEffectCard ec
 ```
 
-I am now able to play the game entirely on the client it seems. I do notice an issue where my attacks are not decrmeneting my available resources and I don't think my resources are reseting every turn.
+I am now able to play the game entirely on the client it seems. I do notice an issue where my attacks are not decrementing my available resources and I don't think my resources are resetting every turn.
 
-I was able to update the resource reseting but altering the `EndTurnEvent` to reset teh users resources when the draw step is set like:
+I was able to update the resource resetting but altering the `EndTurnEvent` to reset the user's resources when the draw step is set like:
 
 ```
 let modifyGameStateFromPerformAttackEvent (ev: PerformAttackEvent) (gs: GameState) =
@@ -3380,5 +3380,6 @@ let rec decrementResourcesFromPlayerBoard playerBoard resourcePool =
 ...
 ```
 
-This now appears to be a somewhat crappy but playable game besides not having a win condition. I need to add the logic to actually cause a player to loose when they have zero or less health. (obviously currently you can do that first turn depending on the cards you draw which makes the game more exciting?)
+This now appears to be a somewhat crappy but playable game besides not having a win condition. I need to add the logic to actually cause a player to lose when they have zero or less health. (obviously currently you can do that first turn depending on the cards you draw which makes the game more exciting?)
 
+I am leaving this as the final commit in the branch `step-15-deck-repository`.
