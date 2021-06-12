@@ -196,7 +196,6 @@ module Domain =
         | true, p -> p |> Ok
         | false, _ -> "Unable to locate oppponent in player list" |> Error
 
-
     let opponentPlayerBoard (model : GameState) =
         match model.Boards.TryGetValue model.PlayerTwo with
         | true, p -> p |> Ok
@@ -290,20 +289,40 @@ module Domain =
             gs with CurrentStep = newStep
         }
 
-
     let getNeededResourcesForCard card =
         match card with
         | CharacterCard cc -> cc.ResourceCost
         | ResourceCard rc -> rc.ResourceCost
         | EffectCard ec -> ec.ResourceCost
 
-    let tryRemoveResourceFromPlayerBoard (playerBoard:PlayerBoard) x y =
+    let rec tryRemoveResourceFromPlayerBoard (playerBoard:PlayerBoard) x y =
         match playerBoard.AvailableResourcePool.TryGetValue(x) with
         | true, z when z >= y -> Ok {playerBoard with AvailableResourcePool = (addResourcesToPool playerBoard.AvailableResourcePool  [ (x, 0-y) ])  }
-        | _, _ -> sprintf "Not enough %s" (getSymbolForResource x) |> Error
+        | _, _ ->
+                if x = Colorless then
+                    let letBestMatch = playerBoard.AvailableResourcePool
+                                        |> Map.toList
+                                        |> List.filter (fun (k,v) -> v > 0)
+                                        |> List.tryHead
+
+                    match letBestMatch with
+                    | None -> sprintf "Not enough %s" (getSymbolForResource x) |> Error
+                    | Some (k, v) when v >= y  -> Ok {playerBoard with AvailableResourcePool = (addResourcesToPool playerBoard.AvailableResourcePool  [ (k, v-y) ])  }
+                    | Some (k, v) ->
+                        tryRemoveResourceFromPlayerBoard
+                            {playerBoard with AvailableResourcePool = (addResourcesToPool playerBoard.AvailableResourcePool  [ (k, 0) ])  }
+                            x (y - v)
+                else
+                    sprintf "Not enough %s" (getSymbolForResource x) |> Error
 
     let rec decrementResourcesFromPlayerBoard playerBoard resourcePool =
-        match resourcePool with
+
+        let sortedPool = resourcePool |> List.sortBy (fun (x : Resource * int) ->
+                                                                    match x with
+                                                                    | Colorless, _ -> 2
+                                                                    | _, _ -> 1
+                                                                )
+        match sortedPool with
         | [] -> Ok playerBoard
         | [ (x, y) ] -> tryRemoveResourceFromPlayerBoard playerBoard x y
         | (x, y) :: xs ->
@@ -320,7 +339,6 @@ module Domain =
         match card with
         | CharacterCard cc -> cc.Creature.Health
         | _ -> 0
-
 
     let getNameFromCard card =
         match card with
@@ -360,3 +378,14 @@ module Domain =
             pb |> Ok
         | false, _ ->
             (sprintf "Unable to locate player board for player id %s" (playerId.ToString())) |> Error
+
+    let drawCardsFromDeck (cardsToDraw: int) (deck : Deck) (hand: Hand) =
+        if deck.Cards.IsEmpty then
+            deck, hand
+        else
+            let cardsToTake = List.truncate cardsToDraw deck.Cards
+            { deck with Cards = List.skip cardsToTake.Length deck.Cards}, {hand with Cards = hand.Cards @ cardsToTake}
+
+    let moveCardsFromDeckToHand gs playerId pb =
+        let newDeck, newHand =  drawCardsFromDeck 1 pb.Deck pb.Hand
+        Ok { gs with Boards = (gs.Boards.Add (playerId, { pb with Deck = newDeck; Hand = newHand })  ) }

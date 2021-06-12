@@ -12,6 +12,7 @@ open DatabaseRepositories
 
 let playerRepository = PlayerRepository()
 let cardRepository = CardRepository()
+let deckRepository = DeckRepository()
 
 let gameApi : ICardGameApi =
     {
@@ -19,6 +20,8 @@ let gameApi : ICardGameApi =
         getPlayer = fun playerId ->  playerRepository.Get(playerId)
         getCards = fun () -> cardRepository.GetAll()
         getCard = fun cardId -> cardRepository.Get(cardId)
+        getDecks = fun () -> deckRepository.GetAll()
+        getCardsForDeck = fun deckId -> deckRepository.GetCardsForDeck(deckId)
     }
 
 let webApp =

@@ -7,8 +7,8 @@
     <Compile Include="Operators.fs" />
     <Compile Include="CollectionManipulation.fs" />
     <Compile Include="Domain.fs" />
-    <Compile Include="Shared.fs" />
     <Compile Include="Dto.fs" />
+    <Compile Include="Shared.fs" />
     <Compile Include="SampleCardDatabase.fs" />
   </ItemGroup>
   <ItemGroup>
