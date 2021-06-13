@@ -1,6 +1,5 @@
 module PageLayoutParts
 
-open Elmish
 open Fable.React
 open Fable.React.Props
 open Fulma
@@ -8,8 +7,7 @@ open Shared.Domain
 open GeneralUIHelpers
 open Events
 
-
-let topNavigation dispatch =
+let topNavigation (player:Player) dispatch =
   nav [ Class "navbar is-dark" ]
     [ div [ Class "container" ]
         [ div [ Class "navbar-brand" ]
@@ -55,11 +53,11 @@ let topNavigation dispatch =
                               Href "#" ]
                             [ str "Switch Player" ]
                           a [ Class "button is-light"
-                              Href "#" ]
-                            [ str "Log in" ]
+                              Href "userSettings" ]
+                            [ str player.Name ]
                           a [ Class "button is-primary"
-                              Href "#" ]
-                            [ str "Sign up" ]
+                              Href "/signout" ]
+                            [ str "Sign Out" ]
                           a [ Class "button is-dark"
                               Href "https://github.com/jamesclancy/SafeCardGame" ]
                             [ str "Source" ] ] ] ] ] ] ]
@@ -68,7 +66,7 @@ let playerStats  (player: Player) (playerBoard: PlayerBoard) =
     [             div [ Class "navbar-item" ]
                     [ a [ Class "button is-primary"
                           Href "#" ]
-                        [ str (sprintf "💓 %i/10" player.RemainingLifePoints) ] ]
+                        [ str (sprintf "💓 %i%i" player.RemainingLifePoints player.InitialHealth) ] ]
                   div [ Class "navbar-item" ]
                     [ a [ Class "button is-primary"
                           Href "#" ]
@@ -86,7 +84,7 @@ let playerStats  (player: Player) (playerBoard: PlayerBoard) =
                           Href "#" ]
                         [ str (sprintf "Tot %s" (textDescriptionForResourcePool playerBoard.TotalResourcePool))
                           br []
-                          str (sprintf "Ava %s" (textDescriptionForResourcePool playerBoard.AvailableResourcePool))] ] ]
+                          str (sprintf "Ava %s" (textDescriptionForResourcePool playerBoard.AvailableResourcePool)) ] ] ]
 
 let enemyStats (player: Player) (playerBoard: PlayerBoard) =
   nav [ Class "navbar is-fullwidth is-danger" ]
@@ -111,7 +109,7 @@ let renderEnemyActiveCreature (inPlayCreature : Option<InPlayCreature>) =
                             [ p [ Class "card-header-title" ]
                                 [ str (sprintf "✫ %s" card.Name) ]
                               p [ Class "card-header-icon" ]
-                                [ str (sprintf "💓 %i/%i" (creature.TotalHealth - creature.CurrentDamage) creature.TotalHealth)
+                                [ str (sprintf "💓 %i/%i" (creature.TotalHealth - creature.CurrentDamage) creature.TotalHealth )
                                   str (textDescriptionForListOfSpecialConditions creature.SpecialEffect) ] ]
                           div [ Class "card-image" ]
                             [ figure [ Class "image is-4by3" ]
@@ -142,7 +140,7 @@ let renderEnemyBenchRow inPlayCreature =
                               td [ ]
                                 [ str (textDescriptionForListOfSpecialConditions inPlayCreature.SpecialEffect) ]
                               td [ ]
-                                [ str (sprintf "💓 %i/%i" (inPlayCreature.TotalHealth - inPlayCreature.CurrentDamage) inPlayCreature.TotalHealth)  ] ]
+                                [ str (sprintf "💓 %i/%i" (inPlayCreature.TotalHealth - inPlayCreature.CurrentDamage) inPlayCreature.TotalHealth) ] ]
 
 let renderEnemyBench bench  =
     match bench with
@@ -312,9 +310,9 @@ let playerActiveCreature  dispatch gameId playerId isYourAttack playerBoard (inP
 
 let playerBenchCreature (inPlayCreature : InPlayCreature)=
   match (inPlayCreature, inPlayCreature.Card) with
-  | (creature, EffectCard card) ->  strong [] [ str "Active creature is not a character?" ]
-  | (creature, ResourceCard card) -> strong [] [ str "Active creature is not a character?" ]
-  | (creature, CharacterCard card) ->
+  | _, EffectCard card ->  strong [] [ str "Active creature is not a character?" ]
+  | _, ResourceCard card -> strong [] [ str "Active creature is not a character?" ]
+  | creature, CharacterCard card ->
          div [ Class "column is-4-mobile is-12-tablet" ]
                     [ div [ Class "card" ]
                         [ header [ Class "card-header" ]
@@ -351,13 +349,13 @@ let playerBench (bench : Option<InPlayCreature list>) columnsInBench =
           yield! seq {
             let numberOfRows = (l.Length / columnsInBench)
             for row in {0 .. numberOfRows }  do
-                let innerl = Seq.truncate columnsInBench (Seq.skip (row * columnsInBench) l)
+                let innerLoop = Seq.truncate columnsInBench (Seq.skip (row * columnsInBench) l)
 
                 div [ Class "columns is-mobile is-multiline" ]
                     [
                        yield! seq {
-                           for creature in innerl do
-                            div [ Class (sprintf "column is-%i" (12/columnsInBench)) ] [
+                           for creature in innerLoop do
+                            div [ Class (sprintf "column is-%i" (12/columnsInBench))] [
                                 playerBenchCreature creature
                             ]
                        }
@@ -368,7 +366,7 @@ let playerBench (bench : Option<InPlayCreature list>) columnsInBench =
 let playerCreatures  dispatch gameId playerId isYourAttack (player: Player) (playerBoard: PlayerBoard) =
   section [
           Class "section"
-          Style [ Background (sprintf "url('%s')" (player.PlaymatUrl.ToString()))
+          Style [ Background (sprintf "url('%s)" (player.PlaymatUrl.ToString()))
                   BackgroundSize "cover"
                   BackgroundRepeat "no-repeat"
                   BackgroundPosition "center center" ] ]
@@ -548,12 +546,12 @@ let playerHand columnsInHand gameId playerId (hand : Hand)  (dispatch : Msg -> u
               yield! seq {
                 let numberOfRows = (hand.Cards.Length / columnsInHand)
                 for row in {0 .. numberOfRows }  do
-                    let innerl = Seq.truncate columnsInHand (Seq.skip (row * columnsInHand) hand.Cards)
+                    let innerLoop = Seq.truncate columnsInHand (Seq.skip (row * columnsInHand) hand.Cards)
                     div [ Class "columns is-mobile is-multiline" ]
                         [
                            yield! seq {
-                               for creature in innerl do
-                                div [ Class (sprintf "column is-%i" (12/columnsInHand)) ] [
+                               for creature in innerLoop do
+                                div [ Class (sprintf "column is-%i" (12/ columnsInHand)) ] [
                                     (renderCardInstanceForHand dispatch pb gameId playerId creature)
                                 ]
                            }
@@ -629,11 +627,11 @@ let isPlayerAbleToAttack playerId gameStep =
     | Attack c -> c= playerId
     | Reconcile c -> false
 
-let mainLayout  model dispatch =
+let mainLayout model dispatch =
   match extractNeededModelsFromState model with
   | Ok op, Ok opb, Ok cp, Ok cpb ->
       div [ Class "container is-fluid is-full-width" ]
-        [ topNavigation dispatch
+        [ topNavigation cp dispatch
           div [ Class "columns is-fluid is-full-width"] [
               div [ Class "column is-4"] [
                     div [ Class "container is-fluid is-full-width"] [

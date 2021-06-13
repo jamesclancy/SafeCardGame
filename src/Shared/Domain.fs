@@ -2,7 +2,6 @@ namespace Shared
 
 
 open System
-open System.IO
 
 type NonEmptyString = private NonEmptyString of string
     with override this.ToString() = match this with NonEmptyString s -> s
@@ -38,7 +37,7 @@ module ImageUrlString =
             | _ -> false *)
 
     let build str =
-        if not (isUrlImage str) then "Value must be a url pointing to iamge." |> Error
+        if not (isUrlImage str) then "Value must be a url pointing to image." |> Error
         else str |> UrlString.build |> Result.map ImageUrlString
 
 module Domain =
@@ -60,6 +59,7 @@ module Domain =
             Name: string
             PlaymatUrl: ImageUrlString
             RemainingLifePoints: int
+            InitialHealth: int
         }
 
     type Resource =
@@ -194,12 +194,12 @@ module Domain =
     let opponentPlayer (model : GameState) =
         match model.Players.TryGetValue model.PlayerTwo with
         | true, p -> p |> Ok
-        | false, _ -> "Unable to locate oppponent in player list" |> Error
+        | false, _ -> "Unable to locate opponent in player list" |> Error
 
     let opponentPlayerBoard (model : GameState) =
         match model.Boards.TryGetValue model.PlayerTwo with
         | true, p -> p |> Ok
-        | false, _ -> "Unable to locate oppponent in board list" |> Error
+        | false, _ -> "Unable to locate opponent in board list" |> Error
 
     let currentPlayer (model : GameState) =
         match model.Players.TryGetValue model.PlayerOne with
@@ -244,7 +244,7 @@ module Domain =
 
     let textDescriptionForResourcePool (resourcePool : ResourcePool) =
         resourcePool
-        |> Seq.map (fun x -> sprintf "%s x%i" (getSymbolForResource x.Key) x.Value)
+        |> Seq.map (fun x -> sprintf "%sx%i" (getSymbolForResource x.Key) x.Value)
         |> String.concat ";"
 
     let appendNotificationMessageToListOrCreateList (existingNotifications : Option<Notification list>) (newNotification : string) =
@@ -284,7 +284,7 @@ module Domain =
        }
 
     let migrateGameStateToNewStep newStep (gs: GameState) =
-        // maybe some vaidation could go here?
+        // maybe some validation could go here?
         Ok {
             gs with CurrentStep = newStep
         }
@@ -368,6 +368,7 @@ module Domain =
                PlayerId = s
                Name = playerName
                RemainingLifePoints = playerCurrentLife
+               InitialHealth = playerCurrentLife
                PlaymatUrl = pm
             }
         | _ -> Error "Unable to create player"

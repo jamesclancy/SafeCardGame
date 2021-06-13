@@ -28,9 +28,9 @@ let selectAllOkayResultsAsync z = // (z : Async<Result<'a,'b> seq>) =
         |> Seq.fold (@) []
     }
 
-let shuffleG xs = xs |> Seq.sortBy (fun _ -> System.Guid.NewGuid())
+let shuffleG xs = xs |> Seq.sortBy (fun _ -> Guid.NewGuid())
 
-let appendToResultListOrMaintanFailure p n =
+let appendToResultListOrMaintainFailure p n =
     match p with
     | Ok l ->
         match n with
@@ -40,9 +40,9 @@ let appendToResultListOrMaintanFailure p n =
 
 
 type ResultBuilder() =
-    member __.Return(x) = Ok x
-    member __.ReturnFrom(m: Result<_, _>) = m
-    member __.Bind(m, f) = Result.bind f m
+    member _.Return(x) = Ok x
+    member _.ReturnFrom(m: Result<_, _>) = m
+    member _.Bind(m, f) = Result.bind f m
 
 
-let result = new ResultBuilder()
+let result = ResultBuilder()

@@ -5,9 +5,9 @@
     <DefineConstants>FABLE_COMPILER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="index.html" />
+    <None Include="app.html" />
     <None Include="paket.references" />
-    <Compile Include="GameStateTransitions.fs"/>
+    <Compile Include="GameStateTransitions.fs" />
     <Compile Include="GeneralUIHelpers.fs" />
     <Compile Include="PageLayoutElements.fs" />
     <Compile Include="GameSetup.fs" />

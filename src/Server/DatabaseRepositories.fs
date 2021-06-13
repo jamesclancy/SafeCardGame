@@ -85,7 +85,7 @@ module RowMappings =
 
 type PlayerRepository () =
 
-    member __.GetAll () =
+    member _.GetAll () =
         async {
          let! query =
             connectionString
@@ -101,7 +101,7 @@ type PlayerRepository () =
             |> List.toSeq
         }
 
-    member __.Get playerId =
+    member _.Get playerId =
         async {
          let! query =
             connectionString
@@ -117,7 +117,7 @@ type PlayerRepository () =
 
 type CardRepository () =
 
-    member __.GetAll () =
+    member _.GetAll () =
         async {
          let! query =
             connectionString
@@ -133,7 +133,7 @@ type CardRepository () =
             |> List.toSeq
         }
 
-    member __.Get cardId =
+    member _.Get cardId =
         async {
          let! query =
             connectionString
@@ -148,7 +148,7 @@ type CardRepository () =
 
 type DeckRepository () =
 
-    member __.GetAll () =
+    member _.GetAll () =
             async {
              let! query =
                 connectionString
@@ -161,7 +161,7 @@ type DeckRepository () =
                 |> List.toSeq
             }
 
-    member __.GetCardsForDeck deck_id =
+    member _.GetCardsForDeck deck_id =
             async {
              let! query =
                 connectionString

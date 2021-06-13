@@ -51,7 +51,7 @@ let resourceCardConstructor resourceCardId resource =
                 ResourceAvailableOnFirstTurn = true
                 ResourcesAdded = [ (resource, 1) ] |> ResourcePool
                 ImageUrl = imgUrl
-                Description = (sprintf "Add 1 %s to your available resource pool." (getSymbolForResource resource))
+                Description = sprintf "Add 1 %s to your available resource pool." (getSymbolForResource resource)
             }
     | _, _ -> Error "No"
 
@@ -71,7 +71,7 @@ let creatureCardDb =
     [
       ("001", "BulbMon", "It has a bulb on it bro",Resource.Grass, [ Resource.Grass, 1; ] |> Seq.ofList |> ResourcePool, 40, [Resource.Fire] )
       ("050", "DigMon", "Mole Monster", Resource.Fighting,[ Resource.Fighting, 1; ] |> Seq.ofList |> ResourcePool, 30, [ Resource.Lightning ] )
-      ("086", "SeelMon", "See Lion Monster", Resource.Water, [ Resource.Water, 1; ] |> Seq.ofList |> ResourcePool, 60, [ Resource.Lightning ] )
+      ("086", "SealMon", "See Lion Monster", Resource.Water, [ Resource.Water, 1; ] |> Seq.ofList |> ResourcePool, 60, [ Resource.Lightning ] )
     ]
    |> List.map (fun (x,y,z,q,q2,q3, q4) -> creatureCreatureConstructor  x y z q q2 q3 q4)
    |> selectAllOkayResults

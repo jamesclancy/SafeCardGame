@@ -4,15 +4,10 @@ open Elmish
 open Fable.Remoting.Client
 open Shared
 open Shared.Domain
-open Shared.Domain
-open Shared.Domain
 open Operators
 open Events
-open Fable.Core
 open GameSetup
 open GameStateTransitions
-open Operators
-
 
 let cardGameServer =
     Remoting.createApi()
@@ -20,7 +15,7 @@ let cardGameServer =
     |> Remoting.buildProxy<ICardGameApi>
 
 
-let createIniialGameStateFromServer gameId player1Id player2Id =
+let createInitiallyGameStateFromServer gameId player1Id player2Id =
     async {
 
           let! player1 = cardGameServer.getPlayer(player1Id)
@@ -78,7 +73,7 @@ let init =
                 PlayerOne = p1.PlayerId
                 PlayerTwo = p2.PlayerId
             }
-          let cmd = Cmd.OfAsync.result (createIniialGameStateFromServer g "001" "002")
+          let cmd = Cmd.OfAsync.result (createInitiallyGameStateFromServer g "001" "002")
           Ok (model, cmd )
         | _ -> "Failed to create player boards" |> Error
     | _ -> "Failed to create players" |> Error
@@ -98,13 +93,13 @@ let extractGameWonCommandAfterAttack players (gs : GameState) =
                                     Message= None
             } : GameWonEvent) |> GameWon)
         | _ ->
-            Cmd.ofMsg (({GameId= gs.GameId; Winner=None; Message= None}) |> GameWon)
+            Cmd.ofMsg ({GameId= gs.GameId; Winner=None; Message= None} |> GameWon)
 
 
 let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
     match msg with
     | StartGame ev ->
-        intitalizeGameStateFromStartGameEvent ev, Cmd.none
+        initializeGameStateFromStartGameEvent ev, Cmd.none
     | DrawCard  ev ->
         modifyGameStateFromDrawCardEvent ev model, Cmd.none
     | DiscardCard ev ->
@@ -122,7 +117,7 @@ let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
     | SkipAttack ev ->
         { model with CurrentStep = (Reconcile ev.PlayerId)}, Cmd.none
     | EndTurn ev ->
-        moodifyGameStateTurnToOtherPlayer ev.PlayerId model, Cmd.none
+        modifyGameStateTurnToOtherPlayer ev.PlayerId model, Cmd.none
     | DeleteNotification dn ->
         removeNotificationFromGameState model dn, Cmd.none
     | GameWon ev ->
