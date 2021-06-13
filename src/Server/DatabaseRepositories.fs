@@ -3,6 +3,7 @@ module DatabaseRepositories
 open System
 open Npgsql.FSharp
 open Dto
+open Shared.Domain
 open Newtonsoft.Json
 open System.Collections.Generic
 
@@ -58,7 +59,6 @@ module RowMappings =
                     PlaymatUrl = read.string "player_playmat_url"
                     LifePoints = read.int "player_life_points"
                     InitialHealth = read.int "player_initial_health"
-                    Id = read.int "id"
                     DateCreated = read.dateTime "date_created"
                     LastLogin = read.dateTime "last_login"
                 }
@@ -91,32 +91,84 @@ type PlayerRepository () =
 
     member _.GetAll () =
         async {
-         let! query =
-            connectionString
-            |> Sql.connect
-            |> Sql.query "SELECT * FROM player"
-            |> Sql.executeAsync RowMappings.rowToPlayerDto
-            |> Async.AwaitTask
+             let! query =
+                connectionString
+                |> Sql.connect
+                |> Sql.query "SELECT * FROM player"
+                |> Sql.executeAsync RowMappings.rowToPlayerDto
+                |> Async.AwaitTask
 
-         return query
-            |> Seq.map Player.toDomain
-            |> Seq.toList
-            |> CollectionManipulation.selectAllOkayResults
-            |> List.toSeq
+             return query
+                |> Seq.map Player.toDomain
+                |> Seq.toList
+                |> CollectionManipulation.selectAllOkayResults
+                |> List.toSeq
         }
 
     member _.Get playerId =
         async {
-         let! query =
-            connectionString
-            |> Sql.connect
-            |> Sql.query "SELECT * FROM player WHERE player_id = @player_id"
-            |> Sql.parameters [ "player_id", Sql.string playerId ]
-            |> Sql.executeRowAsync RowMappings.rowToPlayerDto
-            |> Async.AwaitTask
+             let! query =
+                connectionString
+                |> Sql.connect
+                |> Sql.query "SELECT * FROM player WHERE player_id = @player_id"
+                |> Sql.parameters [ "player_id", Sql.string playerId ]
+                |> Sql.executeRowAsync RowMappings.rowToPlayerDto
+                |> Async.AwaitTask
 
-         return query
-            |> Player.toDomain
+             return query
+                |> Player.toDomain
+        }
+
+    member _.Update (player : Player) =
+        async {
+             let! query =
+                connectionString
+                |> Sql.connect
+                |> Sql.query """UPDATE player
+                SET
+                player_name = @player_name
+                player_playmat_url = @player_playmat_url
+                player_life_points = @player_life_points
+                player_initial_health = @player_initial_health
+                date_created = @date_created
+                last_login = @last_login
+                WHERE player_id = @player_id"""
+                |> Sql.parameters [
+                        "player_id", Sql.string (player.PlayerId.ToString())
+                        "player_name", Sql.string player.Name
+                        "player_playmat_url", Sql.string (player.PlaymatUrl.ToString())
+                        "player_life_points", Sql.int player.RemainingLifePoints
+                        "player_initial_health", Sql.int player.InitialHealth
+                        "date_created", Sql.timestamptz player.DateCreated
+                        "last_login", Sql.timestamptz player.LastLogin
+                        ]
+                |> Sql.executeNonQueryAsync
+                |> Async.AwaitTask
+
+             return query
+        }
+
+    member _.UpdateLastLoginTime (player : Player) =
+        async {
+             let newPlayer = { player with LastLogin = DateTime.UtcNow}
+         
+             let! query =
+                connectionString
+                |> Sql.connect
+                |> Sql.query """UPDATE player
+                SET
+                last_login = @last_login
+                WHERE player_id = @player_id"""
+                |> Sql.parameters [
+                        "player_id", Sql.string (newPlayer.PlayerId.ToString())
+                        "last_login", Sql.timestamptz newPlayer.LastLogin
+                        ]
+                |> Sql.executeNonQueryAsync
+                |> Async.AwaitTask
+
+             query |> ignore
+
+             return newPlayer
         }
 
 type CardRepository () =
@@ -139,45 +191,45 @@ type CardRepository () =
 
     member _.Get cardId =
         async {
-         let! query =
-            connectionString
-            |> Sql.connect
-            |> Sql.query "SELECT * FROM card WHERE card_id = @card_id"
-            |> Sql.parameters [ "card_id", Sql.string cardId ]
-            |> Sql.executeRowAsync RowMappings.rowToCardDto
-            |> Async.AwaitTask
+             let! query =
+                connectionString
+                |> Sql.connect
+                |> Sql.query "SELECT * FROM card WHERE card_id = @card_id"
+                |> Sql.parameters [ "card_id", Sql.string cardId ]
+                |> Sql.executeRowAsync RowMappings.rowToCardDto
+                |> Async.AwaitTask
 
-         return query |> Card.toDomain
+             return query |> Card.toDomain
         }
 
 type DeckRepository () =
 
     member _.GetAll () =
             async {
-             let! query =
-                connectionString
-                |> Sql.connect
-                |> Sql.query "SELECT * FROM deck"
-                |> Sql.executeAsync RowMappings.rowToPreCreatedDeckDto
-                |> Async.AwaitTask
+                 let! query =
+                    connectionString
+                    |> Sql.connect
+                    |> Sql.query "SELECT * FROM deck"
+                    |> Sql.executeAsync RowMappings.rowToPreCreatedDeckDto
+                    |> Async.AwaitTask
 
-             return query
-                |> List.toSeq
+                 return query
+                    |> List.toSeq
             }
 
     member _.GetCardsForDeck deck_id =
             async {
-             let! query =
-                connectionString
-                |> Sql.connect
-                |> Sql.query "select c.* from card c inner join deck_card_association dca on dca.card_id  = c.card_id where dca.deck_id = @deck_id order by RANDOM()"
-                |> Sql.parameters [ "deck_id", Sql.string deck_id ]
-                |> Sql.executeAsync RowMappings.rowToCardDto
-                |> Async.AwaitTask
+                 let! query =
+                    connectionString
+                    |> Sql.connect
+                    |> Sql.query "select c.* from card c inner join deck_card_association dca on dca.card_id  = c.card_id where dca.deck_id = @deck_id order by RANDOM()"
+                    |> Sql.parameters [ "deck_id", Sql.string deck_id ]
+                    |> Sql.executeAsync RowMappings.rowToCardDto
+                    |> Async.AwaitTask
 
-             return query
-                |> Seq.map Card.toDomain
-                |> Seq.toList
-                |> CollectionManipulation.selectAllOkayResults
-                |> List.toSeq
+                 return query
+                    |> Seq.map Card.toDomain
+                    |> Seq.toList
+                    |> CollectionManipulation.selectAllOkayResults
+                    |> List.toSeq
             }

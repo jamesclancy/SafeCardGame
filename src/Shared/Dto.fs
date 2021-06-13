@@ -11,7 +11,6 @@ type PreCreatedDeckDto =
 
 type PlayerDto =
     {
-        Id: int
         PlayerId: string
         Name:string
         PlaymatUrl: string
@@ -70,7 +69,6 @@ module Player =
            Name = person.Name
            PlaymatUrl = person.PlaymatUrl.ToString()
            LifePoints = person.RemainingLifePoints
-           Id = person.Id
            InitialHealth = person.InitialHealth
            LastLogin = person.LastLogin
            DateCreated = person.DateCreated }: PlayerDto
@@ -83,7 +81,6 @@ module Player =
             let! lifePoints = dto.LifePoints |> Ok
 
             return {
-               Id = dto.Id
                PlayerId = playerId |> PlayerId
                Name = name
                PlaymatUrl = playmatUrl

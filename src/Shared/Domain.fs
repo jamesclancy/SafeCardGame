@@ -55,7 +55,6 @@ module Domain =
 
     type Player =
         {
-            Id: int
             PlayerId: PlayerId
             Name: string
             PlaymatUrl: ImageUrlString
@@ -368,7 +367,6 @@ module Domain =
         match playerId, playerPlaymatUrl with
         | Ok s, Ok pm ->
             Ok {
-               Id = 0
                PlayerId = s
                Name = playerName
                RemainingLifePoints = playerCurrentLife

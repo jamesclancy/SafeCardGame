@@ -1,4 +1,4 @@
-﻿module UserManagementViews
+module UserManagementViews
 
   open Dto
   open Dto
@@ -15,7 +15,6 @@
         table [_class "table is-hoverable is-fullwidth"] [
           thead [] [
             tr [] [
-              th [] [encodedText "Id"]
               th [] [encodedText "PlayerId"]
               th [] [encodedText "PlayerName"]
               th [] [encodedText "PlaymatUrl"]
@@ -28,7 +27,6 @@
           tbody [] [
             for o in objs do
               yield tr [] [
-                td [] [encodedText (string o.Id)]
                 td [] [encodedText (string o.PlayerId)]
                 td [] [encodedText (string o.Name)]
                 td [] [encodedText (string o.PlaymatUrl)]
@@ -56,7 +54,6 @@
         h2 [ _class "title"] [encodedText "Show User"]
 
         ul [] [
-          li [] [ strong [] [encodedText "Id: "]; encodedText (string o.Id) ]
           li [] [ strong [] [encodedText "PlayerId: "]; encodedText (string o.PlayerId) ]
           li [] [ strong [] [encodedText "Name: "]; encodedText (string o.Name) ]
           li [] [ strong [] [encodedText "PlaymatUrl: "]; encodedText (string o.PlaymatUrl) ]
@@ -106,7 +103,6 @@
         form [ _action (if isUpdate then Links.withId ctx o.Value.PlayerId else Links.index ctx ); _method "post"] [
           if not validationResult.IsEmpty then
             yield validationMessage
-          yield field (fun i -> (string i.Id)) "Id" "Id"
           yield field (fun i -> (string i.PlayerId)) "PlayerId" "PlayerId"
           yield field (fun i -> (string i.Name)) "PlayerName" "PlayerName"
           yield field (fun i -> (string i.PlaymatUrl)) "PlaymatUrl" "PlaymatUrl"
