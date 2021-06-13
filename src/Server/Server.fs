@@ -60,6 +60,7 @@ let routes =
         route "/" >=> (authChallenge >=>  htmlFile "public/app.html")
         route "/signout" >=> signOut >=> htmlString "Signed out <a href='/'>Log Back In</a>"
         subRoute "/api" (authChallenge >=> buildRemotingApi gameApi)
+        subRoute "/player" UserManagementController.resource
     ]
 
 
@@ -111,7 +112,6 @@ let app =
         memory_cache
         use_static "public"
         use_gzip
-
         service_config configureGitHubAuth
     }
 

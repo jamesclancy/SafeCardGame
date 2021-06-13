@@ -66,7 +66,7 @@ let playerStats  (player: Player) (playerBoard: PlayerBoard) =
     [             div [ Class "navbar-item" ]
                     [ a [ Class "button is-primary"
                           Href "#" ]
-                        [ str (sprintf "💓 %i%i" player.RemainingLifePoints player.InitialHealth) ] ]
+                        [ str (sprintf "💓 %i/%i" player.RemainingLifePoints player.InitialHealth) ] ]
                   div [ Class "navbar-item" ]
                     [ a [ Class "button is-primary"
                           Href "#" ]

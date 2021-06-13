@@ -9,6 +9,7 @@ nuget Giraffe.ViewEngine
 nuget Newtonsoft.Json
 nuget Npgsql.FSharp
 nuget Expecto
+nuget Farmer
 
 nuget Fable.Core
 nuget Fable.Elmish

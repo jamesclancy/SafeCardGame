@@ -95,6 +95,8 @@ NUGET
       Fable.Core (>= 3.1.5)
       Fable.Parsimmon (>= 4.0)
       FSharp.Core (>= 4.7)
+    Farmer (1.6)
+      FSharp.Core (>= 5.0)
     FSharp.Control.Websockets (0.2.2)
       FSharp.Core (>= 4.3.4)
       Microsoft.IO.RecyclableMemoryStream (>= 1.2.2)

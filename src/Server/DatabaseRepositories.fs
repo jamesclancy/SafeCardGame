@@ -56,7 +56,11 @@ module RowMappings =
                     PlayerId = read.string "player_id"
                     Name = read.string "player_name"
                     PlaymatUrl = read.string "player_playmat_url"
-                    LifePoints = 20
+                    LifePoints = read.int "player_life_points"
+                    InitialHealth = read.int "player_initial_health"
+                    Id = read.int "id"
+                    DateCreated = read.dateTime "date_created"
+                    LastLogin = read.dateTime "last_login"
                 }
 
     let rowToCardDto (read : RowReader) : CardDto =

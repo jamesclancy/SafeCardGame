@@ -55,11 +55,14 @@ module Domain =
 
     type Player =
         {
+            Id: int
             PlayerId: PlayerId
             Name: string
             PlaymatUrl: ImageUrlString
             RemainingLifePoints: int
             InitialHealth: int
+            DateCreated: DateTime
+            LastLogin:DateTime
         }
 
     type Resource =
@@ -365,11 +368,14 @@ module Domain =
         match playerId, playerPlaymatUrl with
         | Ok s, Ok pm ->
             Ok {
+               Id = 0
                PlayerId = s
                Name = playerName
                RemainingLifePoints = playerCurrentLife
                InitialHealth = playerCurrentLife
                PlaymatUrl = pm
+               DateCreated = DateTime.Now
+               LastLogin = DateTime.Now
             }
         | _ -> Error "Unable to create player"
 

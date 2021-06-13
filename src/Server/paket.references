@@ -4,3 +4,4 @@ Fable.Remoting.Giraffe
 Newtonsoft.Json
 Npgsql.FSharp
 Giraffe.ViewEngine
+Farmer

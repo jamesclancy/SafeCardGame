@@ -1,5 +1,6 @@
 module Dto
 
+open System
 open System.Collections.Generic
 
 type PreCreatedDeckDto =
@@ -10,10 +11,14 @@ type PreCreatedDeckDto =
 
 type PlayerDto =
     {
+        Id: int
         PlayerId: string
         Name:string
         PlaymatUrl: string
         LifePoints: int
+        InitialHealth: int
+        LastLogin: DateTime
+        DateCreated: DateTime
     }
 
 type SpecialEffectDto =
@@ -65,7 +70,10 @@ module Player =
            Name = person.Name
            PlaymatUrl = person.PlaymatUrl.ToString()
            LifePoints = person.RemainingLifePoints
-       }: PlayerDto
+           Id = person.Id
+           InitialHealth = person.InitialHealth
+           LastLogin = person.LastLogin
+           DateCreated = person.DateCreated }: PlayerDto
 
     let toDomain (dto: PlayerDto) :Result<Player,string> =
         CollectionManipulation.result {
@@ -75,12 +83,14 @@ module Player =
             let! lifePoints = dto.LifePoints |> Ok
 
             return {
+               Id = dto.Id
                PlayerId = playerId |> PlayerId
                Name = name
                PlaymatUrl = playmatUrl
                RemainingLifePoints = lifePoints
-               InitialHealth = lifePoints
-            }
+               InitialHealth = dto.InitialHealth
+               DateCreated = dto.DateCreated
+               LastLogin = dto.LastLogin }
         }
 
 module Resource =
