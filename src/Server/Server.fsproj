@@ -8,11 +8,7 @@
   <ItemGroup>
     <None Include="paket.references" />
     <Compile Include="DatabaseRepositories.fs" />
-    <Compile Include="StaticTemplates\App.fs" />
-    <Compile Include="StaticTemplates\Index.fs" />
-    <Compile Include="StaticTemplates\InternalError.fs" />
-    <Compile Include="StaticTemplates\NotFound.fs" />
-    <Compile Include="StaticTemplates\UserView.fs" />
+    <Compile Include="UserManagement\App.fs" />
     <Compile Include="UserManagement\Views.fs" />
     <Compile Include="UserManagement\Controller.fs" />
     <Compile Include="Server.fs" />

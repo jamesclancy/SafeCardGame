@@ -31,7 +31,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Server.Tests", "tests\Serve
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Client.Tests", "tests\Client\Client.Tests.fsproj", "{CF8C20AC-1FC4-4114-ACB8-6CE6E51F34F9}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ssripts", "Ssripts", "{041ED855-0CC1-44AF-93E2-A4BAB246E0C5}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{041ED855-0CC1-44AF-93E2-A4BAB246E0C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
