@@ -18,6 +18,9 @@ open FSharp.Control.Tasks
 open Microsoft.AspNetCore
 open Microsoft.AspNetCore.Authentication
 
+
+Dapper.DefaultTypeMap.MatchNamesWithUnderscores <- true;
+
 let playerRepository = PlayerRepository()
 let cardRepository = CardRepository()
 let deckRepository = DeckRepository()
@@ -58,9 +61,12 @@ let signOut (next : HttpFunc) (ctx : HttpContext) =
 let routes =
     choose [
         route "/" >=> (authChallenge >=>  htmlFile "public/app.html")
-        route "/signout" >=> signOut >=> htmlString "Signed out <a href='/'>Log Back In</a>"
+        route "/signout" >=> signOut >=>   htmlView (App.signedOut ())
         subRoute "/api" (authChallenge >=> buildRemotingApi gameApi)
-        subRoute "/player" UserManagementController.resource
+        subRoute "/player"  (authChallenge >=> UserManagementController.resource)
+        subRoute "/game"  (authChallenge >=> Games.Controller.resource)
+        subRoute "/deck"  (authChallenge >=> Decks.Controller.resource)
+        subRoute "/card"  (authChallenge >=> Cards.Controller.resource)
     ]
 
 
@@ -90,7 +96,7 @@ let configureGitHubAuth (services : IServiceCollection) =
           opt.AuthorizationEndpoint <-  "https://github.com/login/oauth/authorize"
           opt.TokenEndpoint <- "https://github.com/login/oauth/access_token"
           opt.UserInformationEndpoint <- "https://api.github.com/user"
-          [("login", "githubUsername"); ("name", "fullName")] |> Seq.iter (fun (k,v) -> opt.ClaimActions.MapJsonKey(v,k) )
+          [("login", "playerId"); ("name", "playerName")] |> Seq.iter (fun (k,v) -> opt.ClaimActions.MapJsonKey(v,k) )
           let ev = opt.Events
 
           ev.OnCreatingTicket <- Func<_,_> Application.parseAndValidateOauthTicket

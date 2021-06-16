@@ -7,7 +7,18 @@ module UserManagementViews
   open Saturn
   open Shared.Domain
 
+  let playerInformation (ctx :HttpContext) =
+    let nameClaim = Seq.filter (fun (x: System.Security.Claims.Claim) -> x.Type = "playerName") ctx.User.Claims |> Seq.toList
+    let idClaim = Seq.filter (fun (x: System.Security.Claims.Claim) -> x.Type = "playerId") ctx.User.Claims |> Seq.toList
+
+    match nameClaim, idClaim with
+    | [ x ], [ y ] -> x.Value, y.Value
+    | [] , [y] -> y.Value, y.Value
+    | _,_ -> "Unknown", "Unknown"
+
+
   let index (ctx : HttpContext) (objs : PlayerDto list) =
+    let conf = Config.getConfigFromContext ctx
     let cnt = [
       div [_class "container "] [
         h2 [ _class "title"] [encodedText "Listing Users"]
@@ -45,10 +56,11 @@ module UserManagementViews
         a [_class "button is-text"; _href (Links.add ctx )] [encodedText "New User"]
       ]
     ]
-    App.layout ([section [_class "section"] cnt])
+    App.layout conf.currentPlayer ([section [_class "section"] cnt])
 
 
   let show (ctx : HttpContext) (o : PlayerDto) =
+    let conf = Config.getConfigFromContext ctx
     let cnt = [
       div [_class "container "] [
         h2 [ _class "title"] [encodedText "Show User"]
@@ -65,9 +77,10 @@ module UserManagementViews
         a [_class "button is-text"; _href (Links.index ctx )] [encodedText "Back"]
       ]
     ]
-    App.layout ([section [_class "section"] cnt])
+    App.layout  conf.currentPlayer   ([section [_class "section"] cnt])
 
   let private form (ctx: HttpContext) (o: PlayerDto option) (validationResult : Map<string, string>) isUpdate =
+    let conf = Config.getConfigFromContext ctx
     let validationMessage =
       div [_class "notification is-danger"] [
         a [_class "delete"; attr "aria-label" "delete"] []
@@ -113,7 +126,7 @@ module UserManagementViews
         ]
       ]
     ]
-    App.layout ([section [_class "section"] cnt])
+    App.layout  conf.currentPlayer  ([section [_class "section"] cnt])
 
   let add (ctx: HttpContext) (o: PlayerDto option) (validationResult : Map<string, string>)=
     form ctx o validationResult false

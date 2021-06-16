@@ -18,6 +18,6 @@ type ICardGameApi =
         getPlayer: string -> Async<Result<Player, string>>
         getCards: unit -> Async<Card seq>
         getCard: string -> Async<Result<Card,string>>
-        getDecks: unit -> Async<PreCreatedDeckDto seq>
+        getDecks: unit -> Async<DeckDto seq>
         getCardsForDeck: string ->  Async<Card seq>
     }

@@ -53,7 +53,7 @@ let topNavigation (player:Player) dispatch =
                               Href "#" ]
                             [ str "Switch Player" ]
                           a [ Class "button is-light"
-                              Href "userSettings" ]
+                              Href (sprintf "/player/%s" (player.PlayerId.ToString())) ]
                             [ str player.Name ]
                           a [ Class "button is-primary"
                               Href "/signout" ]

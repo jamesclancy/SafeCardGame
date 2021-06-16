@@ -82,10 +82,15 @@ module RowMappings =
                 ResourcesAdded = read.string "card_resources_added"  |>  JsonToDtoMappings.ResourcePool.parseDtoFromJson
             }
 
-    let rowToPreCreatedDeckDto (read : RowReader) : PreCreatedDeckDto = {
+    let rowToPreCreatedDeckDto (read : RowReader) : DeckDto = {
                     DeckId = read.string "deck_id"
                     DeckName = read.string "deck_name"
-                }
+                    DeckDescription = "na"
+                    DeckImageUrl =  "na"
+                    DeckThumbnailImageUrl =  "na"
+                    DeckPrimaryResource =  "na"
+                    DeckOwner =  "na"
+                    DeckPrivate =  false }
 
 type PlayerRepository () =
 

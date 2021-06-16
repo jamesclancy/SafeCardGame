@@ -10,6 +10,7 @@ nuget Newtonsoft.Json
 nuget Npgsql.FSharp
 nuget Expecto
 nuget Farmer
+nuget Dapper
 
 nuget Fable.Core
 nuget Fable.Elmish

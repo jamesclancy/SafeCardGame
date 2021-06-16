@@ -2,6 +2,7 @@ STORAGE: NONE
 RESTRICTION: == net5.0
 NUGET
   remote: https://api.nuget.org/v3/index.json
+    Dapper (2.0.90)
     Expecto (9.0.2)
       FSharp.Core (>= 4.6)
       Mono.Cecil (>= 0.11.2)

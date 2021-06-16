@@ -3,12 +3,21 @@ module Dto
 open System
 open System.Collections.Generic
 
-type PreCreatedDeckDto =
+[<CLIMutable>]
+type DeckDto =
     {
         DeckId: string
-        Name: string
+        DeckName: string
+        DeckDescription: string
+        DeckImageUrl: string
+        DeckThumbnailImageUrl: string
+        DeckPrimaryResource: string
+        DeckOwner: string
+        DeckPrivate: bool
     }
 
+
+[<CLIMutable>]
 type PlayerDto =
     {
         PlayerId: string
@@ -26,6 +35,8 @@ type SpecialEffectDto =
         Function: string
     }
 
+
+[<CLIMutable>]
 type AttackDto =
     {
 
@@ -56,6 +67,21 @@ type CardDto =
 
         ResourceAvailableOnFirstTurn: Option<bool>
         ResourcesAdded:Dictionary<string, int>
+    }
+
+
+[<CLIMutable>]
+type GameDto = {
+      GameId: string
+      Player1Id: string
+      Player2Id: string
+      CurrentStep: string
+      CurrentPlayerMove: string
+      Winner: string
+      Notes: string
+      InProgress: bool
+      DateStarted: System.DateTime
+      LastMovement: System.DateTime
     }
 
 open Shared
