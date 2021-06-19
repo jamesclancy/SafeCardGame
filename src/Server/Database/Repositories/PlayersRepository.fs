@@ -1,5 +1,6 @@
 ﻿namespace Players
 
+open System
 open Database
 open Dto
 open Shared.Domain
@@ -34,13 +35,13 @@ module Database =
       use connection = new NpgsqlConnection(connectionString)
       let! res = querySingle connection """
                             select
-                            	player_id,
-                            	player_name,
-                            	player_playmat_url,
-                            	player_life_points,
-                            	player_initial_health,
-                            	date_created,
-                            	last_login
+                            	player_id PlayerId,
+                            	player_name as name,
+                            	player_playmat_url PlaymatUrl,
+                            	player_life_points LifePoints,
+                            	player_initial_health InitialHealth,
+                            	date_created DateCreated,
+                            	last_login LastLogin
                             from
                             	public.player
                             WHERE player_id=@Id""" (Some <| dict ["id" => id])
@@ -102,4 +103,22 @@ module Database =
       use connection = new NpgsqlConnection(connectionString)
       return! execute connection "DELETE FROM User WHERE player_id=@Id" (dict ["id" => id])
     } |> Async.AwaitTask
+
+  let getOrCreatePlayer connectionString id name  : Async<Result<Player option, exn>> =
+      task {
+        let! initialResult = getById connectionString id
+
+        match initialResult with
+        | Ok (Some s) -> return (s |> Some |> Ok)
+        | Error e ->  return (e |> Error)
+        | Ok None ->
+            let playerToSave = Player.toDomain { PlayerId = id; Name = name; PlaymatUrl = "lol.png"; LifePoints = 20; InitialHealth = 20; LastLogin = DateTime.UtcNow; DateCreated = DateTime.UtcNow }
+            match playerToSave with
+            | Ok p ->
+                // create the player in the database
+                insert connectionString (Player.fromDomain p) |> Async.RunSynchronously |> ignore
+                return (p |> Some |> Ok)
+            | Error e -> return (Exception(e) |> Error)
+      } |> Async.AwaitTask
+
 

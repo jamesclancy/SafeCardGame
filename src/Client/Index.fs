@@ -52,8 +52,8 @@ let init =
 
     match player1, player2, gameId with
     | Ok p1, Ok p2, Ok g ->
-        let playerBoard1 = emptyPlayerBoard p1
-        let playerBoard2 = emptyPlayerBoard p2
+        let playerBoard1 = SampleCardDatabase.emptyPlayerBoard p1
+        let playerBoard2 = SampleCardDatabase.emptyPlayerBoard p2
         match playerBoard1, playerBoard2 with
         | Ok pb1, Ok pb2 ->
           let model : GameState =
@@ -94,7 +94,6 @@ let extractGameWonCommandAfterAttack players (gs : GameState) =
             } : GameWonEvent) |> GameWon)
         | _ ->
             Cmd.ofMsg ({GameId= gs.GameId; Winner=None; Message= None} |> GameWon)
-
 
 let update (msg: Msg) (model: GameState): GameState * Cmd<Msg> =
     match msg with

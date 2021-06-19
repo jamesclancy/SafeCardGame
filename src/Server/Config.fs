@@ -1,5 +1,6 @@
 module Config
 
+open System
 open Microsoft.AspNetCore.Http
 open FSharp.Control.Tasks
 open Microsoft.Extensions.Configuration
@@ -36,7 +37,7 @@ let getConfigFromContext (ctx : HttpContext) : Config =
 
             let playerRepo = PlayerRepository ()
 
-            match! Players.Database.getById connectionString x with
+            match! Players.Database.getOrCreatePlayer connectionString y x with
             | Ok (Some s) ->
                 return {
                     connectionString = connectionString

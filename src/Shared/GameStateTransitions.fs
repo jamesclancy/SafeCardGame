@@ -1,4 +1,5 @@
-module GameStateTransitions
+﻿module GameStateTransitions
+
 open Events
 open Shared.Domain
 open Operators
@@ -10,7 +11,6 @@ let takeDeckDealFirstHandAndReturnNewPlayerBoard (initialHandSize: int) (playerI
         Cards = list.Empty
       }
     let deckAfterDraw, hand = drawCardsFromDeck initialHandSize deck emptyHand
-
     {
         PlayerId=  playerId
         Deck= deckAfterDraw

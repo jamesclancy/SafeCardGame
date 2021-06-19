@@ -61,24 +61,3 @@ let testDeckSeqGenerator (cardGameServer : ICardGameApi) (numberOfCards :int) =
             |> CollectionManipulation.selectAllOkayResults
         }
 
-let emptyPlayerBoard (player : Player) =
-            Ok  {
-                    PlayerId=  player.PlayerId
-                    Deck= {
-                        TopCardsExposed = 0
-                        Cards =  List.empty
-                    }
-                    Hand=
-                        {
-                            Cards = List.empty
-                        }
-                    ActiveCreature= None
-                    Bench=  None
-                    DiscardPile= {
-                        TopCardsExposed = 0
-                        Cards = List.empty
-                    }
-                    TotalResourcePool= ResourcePool Seq.empty
-                    AvailableResourcePool =  ResourcePool Seq.empty
-                    ZoomedCard = None
-                }
