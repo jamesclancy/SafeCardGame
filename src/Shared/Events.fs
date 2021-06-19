@@ -76,3 +76,5 @@ type Msg =
     | DeleteNotification of Guid
     | GameWon of GameWonEvent
     | SwapPlayer
+
+type BridgedMsg = Msg * PlayerId

@@ -3383,3 +3383,17 @@ let rec decrementResourcesFromPlayerBoard playerBoard resourcePool =
 This now appears to be a somewhat crappy but playable game besides not having a win condition. I need to add the logic to actually cause a player to lose when they have zero or less health. (obviously currently you can do that first turn depending on the cards you draw which makes the game more exciting?)
 
 I am leaving this as the final commit in the branch `step-15-deck-repository`.
+
+## Moving Stuff around and writing tests
+
+A number of times during this process I have encountered stupid issues which could have been avoided had a spent a little time refactoring & writing tests. I didn't do this as I didn't think this would be a complicated or time consuming of a project. Since the game psuedo works now I am going to to take the time to do some house keeping.
+
+I added some authentication via Oauth with Github.
+
+Additionally, I added user secrets and configuration registration. I used Rider spell check to fix a number of spelling mistakes and reformat a number of things.
+
+Apparently, string interpolation does not work with fable/react and completely broke the site. I migrated everything from sprintf via the refactor and then had to manually redo it all which was endless fun.
+
+I am trying to add a user management controller now. I tried using saturn cli. This conflicted with the safe template so I created it in a different repo and am trying to copy it over.
+
+

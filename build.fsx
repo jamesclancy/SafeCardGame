@@ -1,4 +1,10 @@
-#r "paket: groupref build //"
+#r "paket:
+nuget FSharp.Core
+nuget Fake.Core.ReleaseNotes prerelease
+nuget Fake.Core.Target prerelease
+nuget Fake.DotNet.Cli prerelease
+nuget Fake.IO.FileSystem prerelease
+nuget Farmer"
 #load "./.fake/build.fsx/intellisense.fsx"
 #r "netstandard"
 
@@ -15,6 +21,9 @@ let serverPath = Path.getFullName "./src/Server"
 let deployDir = Path.getFullName "./deploy"
 let sharedTestsPath = Path.getFullName "./tests/Shared"
 let serverTestsPath = Path.getFullName "./tests/Server"
+
+let serverPublicPath = Path.getFullName "./src/Server/public"
+let clientPublicPath = Path.getFullName "./src/Client/public"
 
 let npm args workingDir =
     let npmPath =
@@ -36,14 +45,16 @@ let npm args workingDir =
 
 let dotnet cmd workingDir =
     let result = DotNet.exec (DotNet.Options.withWorkingDirectory workingDir) cmd ""
-    if result.ExitCode <> 0 then failwithf "'dotnet %s' failed in %s" cmd workingDir
+    if result.ExitCode <> 0 then failwithf $"'dotnet %s{cmd}' failed in %s{workingDir}"
 
-Target.create "Clean" (fun _ -> Shell.cleanDir deployDir)
+Target.create "Clean" (fun _ ->
+    Shell.cleanDir deployDir
+    Shell.cleanDir serverPublicPath)
 
 Target.create "InstallClient" (fun _ -> npm "install" ".")
 
 Target.create "Bundle" (fun _ ->
-    dotnet (sprintf "publish -c Release -o \"%s\"" deployDir) serverPath
+    dotnet $"publish -c Release -o \"%s{deployDir}\"" serverPath
     npm "run build" "."
 )
 
@@ -63,6 +74,7 @@ Target.create "Azure" (fun _ ->
 )
 
 Target.create "Run" (fun _ ->
+    Shell.copyDir serverPublicPath clientPublicPath FileFilter.allFiles
     dotnet "build" sharedPath
     [ async { dotnet "watch run" serverPath }
       async { npm "run start" "." } ]

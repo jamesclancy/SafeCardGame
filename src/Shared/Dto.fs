@@ -1,19 +1,32 @@
 module Dto
+
 open System
 open System.Collections.Generic
 
-type PreCreatedDeckDto =
+[<CLIMutable>]
+type DeckDto =
     {
         DeckId: string
-        Name: string
+        DeckName: string
+        DeckDescription: string
+        DeckImageUrl: string
+        DeckThumbnailImageUrl: string
+        DeckPrimaryResource: string
+        DeckOwner: string
+        DeckPrivate: bool
     }
 
+
+[<CLIMutable>]
 type PlayerDto =
     {
         PlayerId: string
         Name:string
         PlaymatUrl: string
         LifePoints: int
+        InitialHealth: int
+        LastLogin: DateTime
+        DateCreated: DateTime
     }
 
 type SpecialEffectDto =
@@ -22,6 +35,8 @@ type SpecialEffectDto =
         Function: string
     }
 
+
+[<CLIMutable>]
 type AttackDto =
     {
 
@@ -54,21 +69,37 @@ type CardDto =
         ResourcesAdded:Dictionary<string, int>
     }
 
+
+[<CLIMutable>]
+type GameDto = {
+      GameId: string
+      Player1Id: string
+      Player2Id: string
+      CurrentStep: string
+      CurrentPlayerMove: string
+      Winner: string
+      Notes: string
+      InProgress: bool
+      DateStarted: System.DateTime
+      LastMovement: System.DateTime
+    }
+
 open Shared
 open Shared.Domain
-open System.Text.Json
 
 module Player =
 
-    let fromDomain (person:Domain.Player) : PlayerDto =
+    let fromDomain (person:Player) : PlayerDto =
        {
            PlayerId = person.PlayerId.ToString()
            Name = person.Name
            PlaymatUrl = person.PlaymatUrl.ToString()
            LifePoints = person.RemainingLifePoints
-       }: PlayerDto
+           InitialHealth = person.InitialHealth
+           LastLogin = person.LastLogin
+           DateCreated = person.DateCreated }: PlayerDto
 
-    let toDomain (dto: PlayerDto) :Result<Domain.Player,string> =
+    let toDomain (dto: PlayerDto) :Result<Player,string> =
         CollectionManipulation.result {
             let! playerId = dto.PlayerId |> NonEmptyString.build
             let! name = dto.Name |> Ok
@@ -80,15 +111,17 @@ module Player =
                Name = name
                PlaymatUrl = playmatUrl
                RemainingLifePoints = lifePoints
-            }
+               InitialHealth = dto.InitialHealth
+               DateCreated = dto.DateCreated
+               LastLogin = dto.LastLogin }
         }
 
 module Resource =
 
-    let fromDomain (resource: Domain.Resource) : string =
+    let fromDomain (resource: Resource) : string =
         (resource.ToString())
 
-    let fromString (resource: string) : Result<Domain.Resource, string> =
+    let fromString (resource: string) : Result<Resource, string> =
         match resource with
          |"Grass"         -> Ok Grass
          |"Fire"          -> Ok Fire
@@ -99,18 +132,18 @@ module Resource =
          |"Colorless" -> Ok Colorless
          | e -> sprintf "Unable to parse resource type of %s" e |> Error
 
-    let fromStringSeq (resources: string seq) : Result<Domain.Resource seq, string> =
+    let fromStringSeq (resources: string seq) : Result<Resource seq, string> =
         resources
         |> Seq.map fromString
         |> Seq.map (fun x ->
                             match x with
                             | Ok y -> Ok [y]
                             | Error e ->  Error e)
-        |> Seq.fold CollectionManipulation.appendToResultListOrMaintanFailure (Ok [])
+        |> Seq.fold CollectionManipulation.appendToResultListOrMaintainFailure (Ok [])
         |> Result.bind (fun x -> x |> Seq.ofList |> Ok)
 module ResourcePool =
 
-    let fromDomain (resource: Domain.ResourcePool) : Dictionary<string, int> =
+    let fromDomain (resource: ResourcePool) : Dictionary<string, int> =
         Map.toList resource
         |>  List.map (fun (x,y) -> (Resource.fromDomain x, y))
         |> dict |> Dictionary
@@ -134,13 +167,13 @@ module ResourcePool =
                         match x with
                         | Ok y -> Ok [y]
                         | Error e ->  Error e)
-        |> Seq.fold CollectionManipulation.appendToResultListOrMaintanFailure (Ok [])
+        |> Seq.fold CollectionManipulation.appendToResultListOrMaintainFailure (Ok [])
         |> Result.bind (fun x -> x |> Seq.ofList |> Domain.ResourcePool |> Ok)
 
 
 module GameStateSpecialEffect =
 
-    let fromDomain (specialEffect : Option<Domain.GameStateSpecialEffect>) : Option<SpecialEffectDto> =
+    let fromDomain (specialEffect : Option<GameStateSpecialEffect>) : Option<SpecialEffectDto> =
         match specialEffect with
         |None -> None
         |Some s ->
@@ -152,7 +185,7 @@ module GameStateSpecialEffect =
     let fromDto (specialEffectDto : SpecialEffectDto) : Result<GameStateSpecialEffect, string> =
        Ok {
            Description = specialEffectDto.Description
-           Function = fun x -> x
+           Function = id
        }
 
 
@@ -162,7 +195,7 @@ module GameStateSpecialEffect =
        | Some d ->
                    {
                        Description = d.Description
-                       Function = fun x -> x
+                       Function = id
                    } |> Some |> Ok
 
 module Attack =
@@ -195,7 +228,7 @@ module Attack =
                             match x with
                             | Ok y -> Ok [y]
                             | Error e ->  Error e)
-        |> Seq.fold CollectionManipulation.appendToResultListOrMaintanFailure (Ok [])
+        |> Seq.fold CollectionManipulation.appendToResultListOrMaintainFailure (Ok [])
 
 
 module Card =
@@ -210,7 +243,7 @@ module Card =
         | None -> Error "Unable to parse `add resources first turn` value from card dto."
         | Some s -> Ok s
 
-    let fromDomain (person:Domain.Card) : CardDto =
+    let fromDomain (person:Card) : CardDto =
         match person with
         | CharacterCard cc ->
                {
@@ -279,7 +312,7 @@ module Card =
                     ResourcesAdded = ResourcePool.emptyDictionary
                }: CardDto
 
-    let toDomain (cc:CardDto) :Result<Domain.Card,string> =
+    let toDomain (cc:CardDto) :Result<Card,string> =
         CollectionManipulation.result {
                     let! cardId = cc.CardId |> NonEmptyString.build
                     let! imageUrl = cc.ImageUrl |> ImageUrlString.build
@@ -339,5 +372,5 @@ module Card =
                                 ExitSpecialEffects = exitSpecialEffects
                         } |> EffectCard
 
-                    
+
         }

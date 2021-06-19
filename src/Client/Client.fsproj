@@ -1,17 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <DefineConstants>FABLE_COMPILER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="index.html" />
+    <None Include="app.html" />
     <None Include="paket.references" />
-    <Compile Include="Events.fs" />
     <Compile Include="GeneralUIHelpers.fs" />
     <Compile Include="PageLayoutElements.fs" />
     <Compile Include="GameSetup.fs" />
-    <Compile Include="GameStateTransitions.fs"/>
     <Compile Include="Index.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>

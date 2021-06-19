@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Operators.fs" />
     <Compile Include="CollectionManipulation.fs" />
     <Compile Include="Domain.fs" />
+    <Compile Include="Events.fs" />
     <Compile Include="Dto.fs" />
     <Compile Include="Shared.fs" />
     <Compile Include="SampleCardDatabase.fs" />
+    <Compile Include="GameStateTransitions.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

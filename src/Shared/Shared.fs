@@ -1,31 +1,16 @@
 namespace Shared
 
-open System
-open System.IO
 open Domain
 open Dto
 
-type Todo =
-    { Id : Guid
-      Description : string }
 
-module Todo =
-    let isValid (description: string) =
-        String.IsNullOrWhiteSpace description |> not
-
-    let create (description: string) =
-        { Id = Guid.NewGuid()
-          Description = description }
+module ApiSubRoute =
+    let builder typeName methodName =
+        sprintf "/%s/%s" typeName methodName
 
 module Route =
     let builder typeName methodName =
-        sprintf "/api/%s" methodName
-        //sprintf "/api/%s/%s" typeName methodName
-
-type ITodosApi =
-    { getTodos : unit -> Async<Todo list>
-      addTodo : Todo -> Async<Todo> }
-
+        sprintf "/api%s" (ApiSubRoute.builder typeName methodName)
 
 type ICardGameApi =
     {
@@ -33,6 +18,6 @@ type ICardGameApi =
         getPlayer: string -> Async<Result<Player, string>>
         getCards: unit -> Async<Card seq>
         getCard: string -> Async<Result<Card,string>>
-        getDecks: unit -> Async<PreCreatedDeckDto seq>
+        getDecks: unit -> Async<DeckDto seq>
         getCardsForDeck: string ->  Async<Card seq>
     }

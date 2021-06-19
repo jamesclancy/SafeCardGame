@@ -1,16 +1,16 @@
-module GameStateTransitions
+﻿module GameStateTransitions
+
 open Events
 open Shared.Domain
 open Operators
 open Shared
 
-let takeDeckDealFirstHandAndReturnNewPlayerBoard (intitalHandSize: int) (playerId : PlayerId) (deck : Deck) =
+let takeDeckDealFirstHandAndReturnNewPlayerBoard (initialHandSize: int) (playerId : PlayerId) (deck : Deck) =
     let emptyHand =
       {
         Cards = list.Empty
       }
-    let deckAfterDraw, hand = drawCardsFromDeck intitalHandSize deck emptyHand
-
+    let deckAfterDraw, hand = drawCardsFromDeck initialHandSize deck emptyHand
     {
         PlayerId=  playerId
         Deck= deckAfterDraw
@@ -26,7 +26,7 @@ let takeDeckDealFirstHandAndReturnNewPlayerBoard (intitalHandSize: int) (playerI
         ZoomedCard = None
     }
 
-let intitalizeGameStateFromStartGameEvent (ev : StartGameEvent) =
+let initializeGameStateFromStartGameEvent (ev : StartGameEvent) =
             {
                 GameId= ev.GameId
                 NotificationMessages= None
@@ -52,7 +52,7 @@ let discardCardFromBoard (cardInstanceId : CardInstanceId) (playerBoard : Player
     let cardToDiscard : CardInstance list = List.filter (fun x -> x.CardInstanceId = cardInstanceId) playerBoard.Hand.Cards
     match cardToDiscard with
     | [] ->
-        (sprintf "Unable to locate card in hand with card instance id %s" (cardInstanceId.ToString())) |> Error
+        sprintf "Unable to locate card in hand with card instance id %s" (cardInstanceId.ToString()) |> Error
     | [ x ] ->
             {
                 playerBoard
@@ -65,7 +65,7 @@ let discardCardFromBoard (cardInstanceId : CardInstanceId) (playerBoard : Player
                          DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
             } |> Ok
     | _ ->
-        (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
+        sprintf "ERROR: located multiple cards in hand with card instance id %s This shouldn't happen" (cardInstanceId.ToString()) |> Error
 
 let applyErrorResultToGamesState originalGameState newGameState =
     match newGameState with
@@ -96,7 +96,7 @@ let modifyGameStateFromDiscardCardEvent (ev: DiscardCardEvent) (gs: GameState) =
         >>= (discardCardFromBoard ev.CardInstanceId)
         |> applyUpdatedPlayerBoardResultToGamesState ev.PlayerId gs
 
-let applyEffectIfDefinied effect gs =
+let applyEffectIfDefined effect gs =
     match effect with
     | Some e -> e.Function gs |> Ok
     | None  -> gs |> Ok
@@ -148,7 +148,7 @@ let playCardFromBoardImp cardInstanceId playerId playerBoard (x : CardInstance) 
                      |> buildInPlayCreatureId
                      >>= (createInPlayCreatureFromCardInstance x.Card)
                      >>= (fun y -> (addCreatureToGameState cardInstanceId x playerId gs playerBoard y) |> Ok)
-                     >>= (applyEffectIfDefinied cc.EnterSpecialEffects)
+                     >>= (applyEffectIfDefined cc.EnterSpecialEffects)
 
                | ResourceCard rc ->
                  let newAvailResourcePool =
@@ -167,7 +167,7 @@ let playCardFromBoardImp cardInstanceId playerId playerBoard (x : CardInstance) 
                             AvailableResourcePool = newAvailResourcePool
                             DiscardPile ={playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
                    }
-                 { gs with Boards = (gs.Boards.Add (playerId, newPb)) } |> (applyEffectIfDefinied rc.EnterSpecialEffects) >>= (applyEffectIfDefinied rc.ExitSpecialEffects)
+                 { gs with Boards = (gs.Boards.Add (playerId, newPb)) } |> (applyEffectIfDefined rc.EnterSpecialEffects) >>= (applyEffectIfDefined rc.ExitSpecialEffects)
                | EffectCard ec ->
                  let newPb =  {
                      playerBoard
@@ -178,7 +178,7 @@ let playCardFromBoardImp cardInstanceId playerId playerBoard (x : CardInstance) 
                              };
                             DiscardPile = {playerBoard.DiscardPile with Cards = playerBoard.DiscardPile.Cards @ [ x ] }
                    }
-                 { gs with Boards = (gs.Boards.Add (playerId, newPb) ) } |> (applyEffectIfDefinied ec.EnterSpecialEffects) >>= (applyEffectIfDefinied ec.ExitSpecialEffects)
+                 { gs with Boards = (gs.Boards.Add (playerId, newPb) ) } |> (applyEffectIfDefined ec.EnterSpecialEffects) >>= (applyEffectIfDefined ec.ExitSpecialEffects)
 
 
 let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (gs: GameState) (playerBoard : PlayerBoard) =
@@ -186,12 +186,12 @@ let playCardFromBoard (cardInstanceId : CardInstanceId) (playerId : PlayerId) (g
 
     match cardToDiscard with
     | [] ->
-        (sprintf "Unable to locate card in hand with card instance id %s" (cardInstanceId.ToString())) |> Error
+        sprintf "Unable to locate card in hand with card instance id %s" (cardInstanceId.ToString()) |> Error
     | [ x ] ->
         decrementRequiredCardResourcesFromModel x.Card playerId gs playerBoard
         >>= (playCardFromBoardImp cardInstanceId playerId playerBoard x cardToDiscard)
     | _ ->
-        (sprintf "ERROR: located multiple cards in hand with card instance id %s. This shouldn't happen" (cardInstanceId.ToString())) |> Error
+        sprintf "ERROR: located multiple cards in hand with card instance id %s This shouldn't happen" (cardInstanceId.ToString()) |> Error
 
 let modifyGameStateFromPlayCardEvent (ev: PlayCardEvent) (gs: GameState) =
         getExistingPlayerBoardFromGameState ev.PlayerId gs
@@ -230,7 +230,7 @@ let activeCreatureKilledFromPlayerBoard playBoard :PlayerBoard =
     | Some [ x ] ->  { playBoard with ActiveCreature = Some x; Bench = None}
     | Some (x :: xs) -> { playBoard with ActiveCreature = Some x; Bench = Some xs}
 
-let applyBasicAttackToPlayBoard (attack : Attack) (playBoard) gs =
+let applyBasicAttackToPlayBoard (attack : Attack) playBoard gs =
         match playBoard.ActiveCreature with
         | Some cre when (cre.CurrentDamage + attack.Damage) < cre.TotalHealth ->
               ({
@@ -259,7 +259,7 @@ let playAttackFromBoard (attack : Attack) (playerId : PlayerId) (gs: GameState) 
 
     match otherBoard with
     | Ok playBoard ->
-        let (newPb, playerDamage, messages) =  (applyBasicAttackToPlayBoard attack playBoard gs)
+        let newPb, playerDamage, messages =  (applyBasicAttackToPlayBoard attack playBoard gs)
 
         { gs with Boards = (gs.Boards.Add (target, newPb)  ) }
         |> applyPlayerDamageToPlayer target playerDamage
@@ -267,7 +267,7 @@ let playAttackFromBoard (attack : Attack) (playerId : PlayerId) (gs: GameState) 
     | Error e ->
         Error e
 
-let tryToMoodifyGameStateFromPerformAttackEvent (ev: PerformAttackEvent) (gs: GameState) =
+let tryToModifyGameStateFromPerformAttackEvent (ev: PerformAttackEvent) (gs: GameState) =
     CollectionManipulation.result {
            let! pb = getExistingPlayerBoardFromGameState ev.PlayerId gs
            let! newGs = decrementRequiredResourcePoolFromModel ev.Attack.Cost ev.PlayerId gs pb
@@ -276,10 +276,10 @@ let tryToMoodifyGameStateFromPerformAttackEvent (ev: PerformAttackEvent) (gs: Ga
     }
 
 let modifyGameStateFromPerformAttackEvent (ev: PerformAttackEvent) (gs: GameState) =
-        tryToMoodifyGameStateFromPerformAttackEvent ev gs
+        tryToModifyGameStateFromPerformAttackEvent ev gs
         |> applyErrorResultToGamesState gs
 
-let tryToMoodifyGameStateTurnToOtherPlayer model otherPlayer  =
+let tryToModifyGameStateTurnToOtherPlayer model otherPlayer  =
          CollectionManipulation.result {
            let! pb = getExistingPlayerBoardFromGameState otherPlayer model
 
@@ -289,7 +289,7 @@ let tryToMoodifyGameStateTurnToOtherPlayer model otherPlayer  =
                   }
          }
 
-let moodifyGameStateTurnToOtherPlayer playerId model =
+let modifyGameStateTurnToOtherPlayer playerId model =
     getTheOtherPlayer model playerId
-    |> tryToMoodifyGameStateTurnToOtherPlayer model
+    |> tryToModifyGameStateTurnToOtherPlayer model
     |> applyErrorResultToGamesState model

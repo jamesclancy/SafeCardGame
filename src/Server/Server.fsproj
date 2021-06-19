@@ -1,18 +1,38 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
+    <UserSecretsId>ffa3fbc5-3f3b-4051-9d1e-403f764bfc1f</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <None Include="paket.references" />
-    <Compile Include="DatabaseRepositories.fs" />
+    <Compile Include="Database\Models\GamesModel.fs" />
+    <Compile Include="Database\Models\DecksModel.fs" />
+    <Compile Include="Database\Models\CardsModel.fs" />
+    <Compile Include="Database\Database.fs" />
+    <Compile Include="Database\Repositories\DatabaseRepositories.fs" />
+    <Compile Include="Database\Repositories\GamesRepository.fs" />
+    <Compile Include="Database\Repositories\DecksRepository.fs" />
+    <Compile Include="Database\Repositories\CardsRepository.fs" />
+    <Compile Include="Database\Repositories\PlayersRepository.fs" />
+    <Compile Include="Config.fs" />
+    <Compile Include="Layout\App.fs" />
+    <Compile Include="UserManagement\Views.fs" />
+    <Compile Include="UserManagement\Controller.fs" />
+    <Compile Include="GameManagement\GamesViews.fs" />
+    <Compile Include="GameManagement\GamesController.fs" />
+    <Compile Include="DeckManagement\DecksViews.fs" />
+    <Compile Include="DeckManagement\DecksController.fs" />
+    <Compile Include="CardManagement\CardsViews.fs" />
+    <Compile Include="CardManagement\CardsController.fs" />
     <Compile Include="Server.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Shared\Shared.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Farmer" Version="1.6.0" />
     <PackageReference Include="JSON.net" Version="1.0.33" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Npgsql.FSharp" Version="4.0.0" />

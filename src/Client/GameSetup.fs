@@ -15,7 +15,7 @@ let testCreatureCardGenerator (cardGameServer : ICardGameApi)  cardInstanceIdStr
                         Card =  card |> CollectionManipulation.shuffleG |> Seq.head
                     }
             | _ ->
-                return (sprintf "Unable to create card instance for %s" cardInstanceIdStr |> Error)
+                return (sprintf "Unable to create card instance for %s" cardInstanceIdStr) |> Error
         }
 
 let testResourceCardGenerator cardInstanceIdStr =
@@ -30,7 +30,7 @@ let testResourceCardGenerator cardInstanceIdStr =
                     Card =  card |> ResourceCard
                 }
         | _ ->
-            return sprintf "Unable to create card instance for %s" cardInstanceIdStr |> Error
+            return (sprintf "Unable to create card instance for %s" cardInstanceIdStr) |> Error
         }
 
 let createRandomCardForSequence  (cardGameServer : ICardGameApi)  x =
@@ -49,7 +49,7 @@ let createCardInstanceForCard (card : Card) =
                     Card =  card
             }
         | _ ->
-            sprintf "Unable to create card instance for %s" (card.ToString()) |> Error
+            (sprintf "Unable to create card instance for %s" (card.ToString())) |> Error
 
 let testDeckSeqGenerator (cardGameServer : ICardGameApi) (numberOfCards :int) =
         async {
@@ -61,24 +61,3 @@ let testDeckSeqGenerator (cardGameServer : ICardGameApi) (numberOfCards :int) =
             |> CollectionManipulation.selectAllOkayResults
         }
 
-let emptyPlayerBoard (player : Player) =
-            Ok  {
-                    PlayerId=  player.PlayerId
-                    Deck= {
-                        TopCardsExposed = 0
-                        Cards =  List.empty
-                    }
-                    Hand=
-                        {
-                            Cards = List.empty
-                        }
-                    ActiveCreature= None
-                    Bench=  None
-                    DiscardPile= {
-                        TopCardsExposed = 0
-                        Cards = List.empty
-                    }
-                    TotalResourcePool= ResourcePool Seq.empty
-                    AvailableResourcePool =  ResourcePool Seq.empty
-                    ZoomedCard = None
-                }

@@ -1,9 +1,7 @@
 module GeneralUIHelpers
 
-open Elmish
 open Fable.React
 open Fable.React.Props
-open Fulma
 open Shared.Domain
 open Events
 
