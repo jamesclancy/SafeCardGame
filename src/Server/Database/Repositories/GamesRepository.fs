@@ -119,7 +119,7 @@ module Database =
       use connection = new NpgsqlConnection(connectionString)
       return! execute connection """
                 update
-                	Game
+                	game
                 set
                     game_current_step = @GameStep,
                     game_last_movement = @CurrentTime,
@@ -127,12 +127,30 @@ module Database =
                     game_winner = @GameWinner,
                     game_state = @GameState
                 where
-                	game_id = @GameId""" (dict [
+                	game_id = @GameId;
+
+                insert into	public.game_state_transaction
+                   (game_id,
+	                game_current_step,
+	                game_current_player_move,
+	                game_winner,
+	                game_notes,
+                    game_state,
+	                game_state_transaction_time)
+                values(@GameId,
+                @GameStep,
+                @PlayerMove,
+                @GameWinner,
+                @GameNotes,
+                @GameState,
+                @CurrentTime);
+                 """ (dict [
                                              "GameId" => (gameState.GameId.ToString())
                                              "GameStep" =>  currentStep
                                              "GameWinner" => winner
                                              "CurrentTime" => DateTime.UtcNow
                                              "PlayerMove" => currentPlayer
+                                             "GameNotes" => ""
                                              "GameState" => Thoth.Json.Net.Encode.Auto.toString(4,gameState)])
     } |> Async.AwaitTask
 
