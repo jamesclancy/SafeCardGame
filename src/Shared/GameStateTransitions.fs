@@ -302,42 +302,42 @@ let extractGameWonCommandAfterAttack players (gs : GameState) =
 
         match deceasedPlayers with
         | [] ->
-            Cmd.none
+            None
         | [ (x, y) ] ->
-            Cmd.ofMsg (({
+            Some (({
                                     GameId= gs.GameId
                                     Winner= Some (getTheOtherPlayer gs x)
                                     Message= None
-            } : GameWonEvent) |> GameWon |> CommandToServer)
+            } : GameWonEvent) |> GameWon)
         | _ ->
-            Cmd.ofMsg ({GameId= gs.GameId; Winner=None; Message= None} |> GameWon |> CommandToServer)
+            Some ({GameId= gs.GameId; Winner=None; Message= None} |> GameWon)
 
 let migrateGamesStateAndGetNewCommandsFromCommand gs msg =
     match msg with
         | StartGame ev ->
-          initializeGameStateFromStartGameEvent ev, Cmd.none
+          initializeGameStateFromStartGameEvent ev, None
         | DrawCard  ev ->
-          modifyGameStateFromDrawCardEvent ev gs, Cmd.none
+          modifyGameStateFromDrawCardEvent ev gs, None
         | DiscardCard ev ->
-           modifyGameStateFromDiscardCardEvent ev gs, Cmd.none
+           modifyGameStateFromDiscardCardEvent ev gs, None
         | ToggleZoomOnCard ev ->
-           modifyGameStateFromToggleZoomOnCardEvent ev gs, Cmd.none
+           modifyGameStateFromToggleZoomOnCardEvent ev gs, None
         | PlayCard ev ->
-          modifyGameStateFromPlayCardEvent ev gs, Cmd.none
+          modifyGameStateFromPlayCardEvent ev gs, None
         | EndPlayStep ev ->
-          { gs with CurrentStep = (Attack ev.PlayerId) }, Cmd.none
+          { gs with CurrentStep = (Attack ev.PlayerId) }, None
         | PerformAttack  ev ->
           let newModel = modifyGameStateFromPerformAttackEvent ev gs
-          let cmd = extractGameWonCommandAfterAttack newModel.Players newModel
+          let cmd =  extractGameWonCommandAfterAttack newModel.Players newModel
           newModel, cmd
         | SkipAttack ev ->
-          { gs with CurrentStep = (Reconcile ev.PlayerId) } , Cmd.none
+          { gs with CurrentStep = (Reconcile ev.PlayerId) } , None
         | EndTurn ev ->
-            modifyGameStateTurnToOtherPlayer ev.PlayerId gs, Cmd.none
+            modifyGameStateTurnToOtherPlayer ev.PlayerId gs, None
         | DeleteNotification dn ->
-           removeNotificationFromGameState gs dn, Cmd.none
+           removeNotificationFromGameState gs dn, None
         | GameWon ev ->
             let newStep =  { WinnerId =  ev.Winner; Message = formatGameOverMessage ev.Message } |> GameOver
-            { gs with CurrentStep = newStep }, Cmd.none
+            { gs with CurrentStep = newStep }, None
         | SwapPlayer ->
-            { gs with PlayerOne = gs.PlayerTwo; PlayerTwo = gs.PlayerOne }, Cmd.none
+            { gs with PlayerOne = gs.PlayerTwo; PlayerTwo = gs.PlayerOne }, None

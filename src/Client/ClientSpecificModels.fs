@@ -7,7 +7,7 @@ open Shared.Domain
 let buildModule =
     ()
 
-type LoginToGameFormModel = { PlayerId: string; GameId: string; ErrorMessage: string }
+type LoginToGameFormModel = { PlayerId: string; GameId: string; ErrorMessage: string; OpenGames: Map<GameId, PlayerId> }
 
 type Model =
     { ConnectionState : ConnectionState

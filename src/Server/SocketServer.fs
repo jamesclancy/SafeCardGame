@@ -43,16 +43,33 @@ let update (conf : Config.Config) clientDispatch msg state =
     | RS msg ->
         match msg with
         | Connect (x, y)->
-            Console.WriteLine("Connected {0},{1}", x.ToString(), y.ToString())
+
+            connections.SendClientIf (fun connectionState ->
+                                            match connectionState with
+                                            | Connected (x, y) -> false
+                                            |_ -> true) ( (x, y)  |> GameAvailable)
+
             (x,y) |> Connected, Cmd.none
         | ServerCommand (m,gs) ->
             let (x, y) = (migrateGamesStateAndGetNewCommandsFromCommand gs m)
+
+            match m with
+            | StartGame sg ->
+                    connections.SendClientIf (fun connectionState ->
+                                            match connectionState with
+                                            | Connected (x, y) -> false
+                                            |_ -> true) ( sg.GameId |> GameNoLongerAvailable) |> ignore
 
             connections.SendClientIf (fun connectionState ->
                                             match connectionState with
                                             | Connected (x, y) when y = gs.GameId -> true
                                             |_ -> false) ( x  |> UpdatedModelForClient)
-            let cmd : Cmd<ServerMsg> = Cmd.OfAsync.perform (Games.Database.updateGameState conf.connectionString) gs (fun _ -> StatePersistedToIO )
+
+            let cmd : Cmd<ServerMsg> = Cmd.OfAsync.perform (Games.Database.updateGameState conf.connectionString) x (fun _ ->
+                match y with
+                | Some prom ->  (prom, x) |> ServerCommand |> RS
+                | None -> StatePersistedToIO )
+
             state, cmd
     | Closed ->
         Disconnected, Cmd.none

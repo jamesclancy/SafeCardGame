@@ -1,5 +1,6 @@
 module PageLayoutParts
 
+open System
 open Fable.React
 open Fable.React.Props
 open Fulma
@@ -656,7 +657,7 @@ module WaitingForAnotherPlayerToJoin =
 module LoginToGameForm =
 
 
-    let init () = { PlayerId = ""; GameId = ""; ErrorMessage = ""  } : LoginToGameFormModel
+    let init () = { PlayerId = ""; GameId = ""; ErrorMessage = ""; OpenGames = Map.empty  } : LoginToGameFormModel
 
     let update (msg:LoginToGameFormMsgType) (model:LoginToGameFormModel) =
         match msg with
@@ -664,6 +665,23 @@ module LoginToGameForm =
         | GameIdUpdated p -> { model with GameId = p }
         | AttemptConnect ->
             model
+
+    let viewAvailableGameInformation (model:Map<GameId, PlayerId>) (dispatch : LoginToGameFormMsgType -> unit) =
+        match model.IsEmpty with
+        | true -> ul [  ] [  ]
+        | false ->
+                let lis = seq {
+                            yield (li [ ] [ str "GameId - PlayerId" ])
+                            for v in model do
+                                yield (li [ ] [ str (sprintf "%s - %s" (v.Key.ToString()) (v.Value.ToString())) ])
+                        }
+
+                ul [ Class "notification is-primary"  ] [ yield! lis ]
+
+    let viewErrorMessage (model:string) =
+        match String.IsNullOrWhiteSpace model with
+        | false -> div [ Class "notification is-warning" ] [ str model ]
+        | true -> div [ Class "" ] [ str model ]
 
     let view (model : LoginToGameFormModel) (dispatch : LoginToGameFormMsgType -> unit) =
             div [ Id "login" ]
@@ -674,7 +692,8 @@ module LoginToGameForm =
                       div [ Class "content" ]
                         [ form [ Method "POST"
                                  Action "#" ]
-                            [ div [ Class "is-warning" ] [ str model.ErrorMessage ]
+                            [ (viewErrorMessage model.ErrorMessage)
+                              (viewAvailableGameInformation model.OpenGames dispatch)
                               input [ Id "playerId"
                                       Type "text"
                                       Name "playerId"

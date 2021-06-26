@@ -40,6 +40,10 @@ let update (cmsg: ClientInternalMsg) (model: Model): Model * Cmd<ClientInternalM
             let newPlayerTwo = gs.PlayerOne
             { model with GameState = Some { gs with PlayerOne = p; PlayerTwo = newPlayerTwo } }, Cmd.none
         | _ -> model, Cmd.none
+    | GameAvailable (pi, gi) ->
+        { model with LoginPageFormModel =  {model.LoginPageFormModel with OpenGames = model.LoginPageFormModel.OpenGames.Add(gi, pi) }}, Cmd.none
+    | GameNoLongerAvailable gi ->
+        { model with LoginPageFormModel =  {model.LoginPageFormModel with OpenGames = model.LoginPageFormModel.OpenGames.Remove(gi) }}, Cmd.none
     | LoginPageFormMsg ltg ->
         match ltg with
         | FailedLogin e ->

@@ -111,5 +111,7 @@ type LoginToGameFormMsgType =
 and ClientInternalMsg  =
        | UpdatedModelForClient of GameState
        | CommandToServer of Msg
+       | GameAvailable of PlayerId * GameId
+       | GameNoLongerAvailable of GameId
        | ConnectionChange of ConnectionState
        | LoginPageFormMsg of LoginToGameFormMsgType
