@@ -1,5 +1,6 @@
 ﻿module GameStateTransitions
 
+open Elmish
 open Events
 open Shared.Domain
 open Operators
@@ -293,3 +294,50 @@ let modifyGameStateTurnToOtherPlayer playerId model =
     getTheOtherPlayer model playerId
     |> tryToModifyGameStateTurnToOtherPlayer model
     |> applyErrorResultToGamesState model
+
+
+let extractGameWonCommandAfterAttack players (gs : GameState) =
+        let deceasedPlayers = Map.toList players
+                                |> List.filter (fun (x,y) -> y.RemainingLifePoints <=0 )
+
+        match deceasedPlayers with
+        | [] ->
+            Cmd.none
+        | [ (x, y) ] ->
+            Cmd.ofMsg (({
+                                    GameId= gs.GameId
+                                    Winner= Some (getTheOtherPlayer gs x)
+                                    Message= None
+            } : GameWonEvent) |> GameWon |> CommandToServer)
+        | _ ->
+            Cmd.ofMsg ({GameId= gs.GameId; Winner=None; Message= None} |> GameWon |> CommandToServer)
+
+let migrateGamesStateAndGetNewCommandsFromCommand gs msg =
+    match msg with
+        | StartGame ev ->
+          initializeGameStateFromStartGameEvent ev, Cmd.none
+        | DrawCard  ev ->
+          modifyGameStateFromDrawCardEvent ev gs, Cmd.none
+        | DiscardCard ev ->
+           modifyGameStateFromDiscardCardEvent ev gs, Cmd.none
+        | ToggleZoomOnCard ev ->
+           modifyGameStateFromToggleZoomOnCardEvent ev gs, Cmd.none
+        | PlayCard ev ->
+          modifyGameStateFromPlayCardEvent ev gs, Cmd.none
+        | EndPlayStep ev ->
+          { gs with CurrentStep = (Attack ev.PlayerId) }, Cmd.none
+        | PerformAttack  ev ->
+          let newModel = modifyGameStateFromPerformAttackEvent ev gs
+          let cmd = extractGameWonCommandAfterAttack newModel.Players newModel
+          newModel, cmd
+        | SkipAttack ev ->
+          { gs with CurrentStep = (Reconcile ev.PlayerId) } , Cmd.none
+        | EndTurn ev ->
+            modifyGameStateTurnToOtherPlayer ev.PlayerId gs, Cmd.none
+        | DeleteNotification dn ->
+           removeNotificationFromGameState gs dn, Cmd.none
+        | GameWon ev ->
+            let newStep =  { WinnerId =  ev.Winner; Message = formatGameOverMessage ev.Message } |> GameOver
+            { gs with CurrentStep = newStep }, Cmd.none
+        | SwapPlayer ->
+            { gs with PlayerOne = gs.PlayerTwo; PlayerTwo = gs.PlayerOne }, Cmd.none

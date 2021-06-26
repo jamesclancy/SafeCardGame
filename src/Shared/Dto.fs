@@ -2,6 +2,7 @@ module Dto
 
 open System
 open System.Collections.Generic
+open Thoth.Json.Net
 
 [<CLIMutable>]
 type DeckDto =
@@ -82,10 +83,52 @@ type GameDto = {
       InProgress: bool
       DateStarted: System.DateTime
       LastMovement: System.DateTime
+      GameState: string
     }
+
 
 open Shared
 open Shared.Domain
+open Thoth.Json
+
+module Game =
+
+    let getPlayerAndStepFromGameStata (gameState: GameState) =
+        match gameState.CurrentStep with
+        | NotCurrentlyPlaying -> "NotCurrentlyPlaying", "", ""
+        | Draw p -> "Draw", p.ToString(), ""
+        | Play p -> "Play", p.ToString(), ""
+        | Attack p -> "Attack", p.ToString(), ""
+        | Reconcile p -> "Reconcile", p.ToString(), ""
+        | GameOver p -> "GameOver",  "", p.WinnerId |> Option.fold (fun _  c ->  c.ToString()) ""
+
+    let fromDto (gameDto: GameDto) : Result<GameState, string> =
+            Decode.Auto.fromString<GameState>(gameDto.GameState)
+
+    let gameStateStrFromDomain  (gameState: GameState) : string =
+        Encode.Auto.toString(4, gameState)
+
+    let fromDomain (gameState: GameState) : GameDto =
+            let stateStr, currentPlayerStr, currentWinnerStr = getPlayerAndStepFromGameStata gameState
+
+            //let gameStateStr = Decode.Auto.fromString<User>(json)
+            let gameStateStr = gameStateStrFromDomain gameState
+
+            {
+              GameId = gameState.GameId.ToString()
+              Player1Id = gameState.PlayerOne.ToString()
+              Player2Id = gameState.PlayerTwo.ToString()
+              CurrentStep = stateStr
+              CurrentPlayerMove = currentPlayerStr
+              Winner = currentWinnerStr
+              Notes = ""
+              InProgress = true
+              DateStarted=  DateTime.Now
+              LastMovement= DateTime.Now
+              GameState = stateStr
+            }
+
+
 
 module Player =
 
@@ -374,3 +417,4 @@ module Card =
 
 
         }
+

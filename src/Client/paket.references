@@ -7,3 +7,6 @@ Fable.FontAwesome.Free
 Fable.React
 Fable.Remoting.Client
 Fulma
+Thoth.Fetch
+Fable.Browser.WebSocket
+Elmish.Bridge.Client

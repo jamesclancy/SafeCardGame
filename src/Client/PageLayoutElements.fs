@@ -6,6 +6,7 @@ open Fulma
 open Shared.Domain
 open GeneralUIHelpers
 open Events
+open ClientSpecificModels
 
 let topNavigation (player:Player) dispatch =
   nav [ Class "navbar is-dark" ]
@@ -49,7 +50,7 @@ let topNavigation (player:Player) dispatch =
                 [ div [ Class "navbar-item" ]
                     [ div [ Class "buttons" ]
                         [ a [ Class "button is-light"
-                              OnClick (fun _ -> SwapPlayer |> dispatch)
+                              OnClick (fun _ -> SwapPlayer |> CommandToServer |> dispatch)
                               Href "#" ]
                             [ str "Switch Player" ]
                           a [ Class "button is-light"
@@ -224,37 +225,37 @@ let stepNavigation  (player: Player) (playerBoard: PlayerBoard) (gameState : Gam
             div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
                         [
-                            (renderStepOptionButton dispatch "Draw" "is-warning" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : DrawCardEvent) |> DrawCard) )
+                            (renderStepOptionButton dispatch "Draw" "is-warning" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : DrawCardEvent) |> DrawCard |> CommandToServer) )
                             ] ]
     |  GameStep.Play d when d = player.PlayerId ->
             div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
                         [
-                            (renderStepOptionButton dispatch "End Play" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndPlayStepEvent) |> EndPlayStep) )
+                            (renderStepOptionButton dispatch "End Play" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndPlayStepEvent) |> EndPlayStep |> CommandToServer) )
                             ] ]
     |  GameStep.Attack d when d = player.PlayerId ->
             div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
                         [
-                            (renderStepOptionButton dispatch "Skip Attack" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : SkipAttackEvent) |> SkipAttack) )
+                            (renderStepOptionButton dispatch "Skip Attack" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : SkipAttackEvent) |> SkipAttack  |> CommandToServer) )
                         ] ]
     |  GameStep.Reconcile d when d = player.PlayerId ->
             div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
                         [
-                            (renderStepOptionButton dispatch "End Turn" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndTurnEvent) |> EndTurn) )
+                            (renderStepOptionButton dispatch "End Turn" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndTurnEvent) |> EndTurn |> CommandToServer) )
                         ] ]
     |  GameStep.NotCurrentlyPlaying ->
             div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
                         [
-                            (renderStepOptionButton dispatch "Start New Game" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndTurnEvent) |> EndTurn) )
+                            (renderStepOptionButton dispatch "Start New Game" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndTurnEvent) |> EndTurn  |> CommandToServer) )
                         ] ]
     |  GameStep.GameOver g ->
             div [ Class "navbar-item" ]
                     [ div [ Class "field is-grouped has-addons is-grouped-right" ]
                         [
-                            (renderStepOptionButton dispatch "Start New Game" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndTurnEvent) |> EndTurn) )
+                            (renderStepOptionButton dispatch "Start New Game" "is-danger" (({ GameId = gameState.GameId; PlayerId = player.PlayerId; } : EndTurnEvent) |> EndTurn  |> CommandToServer) )
                         ] ]
     | _ -> div [] []
 
@@ -491,29 +492,27 @@ let isCardZoomed playerBoard cardInstanceId =
     | Some c when c = cardInstanceId -> true
     | _ -> false
 
-let renderCardInstanceForHand  (dispatch : Msg -> unit)  playerBoard gameId playerId (card: CardInstance) =
+let renderCardInstanceForHand  (dispatch : ClientInternalMsg -> unit)  playerBoard gameId playerId (card: CardInstance) =
     let toggleActive =  (fun _ ->
                                                     ({
                                                         GameId = gameId
                                                         PlayerId = playerId
                                                         CardInstanceId = card.CardInstanceId
-                                                    } : ToggleZoomOnCardEvent) |> ToggleZoomOnCard |>  dispatch)
-    let playCard =  (fun _ ->
+                                                    } : ToggleZoomOnCardEvent) |> ToggleZoomOnCard |> CommandToServer |>  dispatch)
+    let playCard =  (fun _ ->                       toggleActive () |> ignore
                                                     ({
                                                         GameId = gameId
                                                         PlayerId = playerId
                                                         CardInstanceId = card.CardInstanceId
-                                                    } : PlayCardEvent) |> PlayCard |>  dispatch
-                                                    |> ignore
-                                                    toggleActive ())
-    let discardCard =  (fun _ ->
+                                                    } : PlayCardEvent) |> PlayCard |>  CommandToServer |> dispatch
+                                                    |> ignore )
+    let discardCard =  (fun _ ->                    toggleActive () |> ignore
                                                     ({
                                                         GameId = gameId
                                                         PlayerId = playerId
                                                         CardInstanceId = card.CardInstanceId
-                                                    } :  DiscardCardEvent) |> DiscardCard |>  dispatch
-                                                    |> ignore
-                                                    toggleActive () )
+                                                    } :  DiscardCardEvent) |> DiscardCard |>  CommandToServer |> dispatch
+                                                    |> ignore )
     let cardModal isActive closeDisplay =
        Modal.modal [ Modal.IsActive isActive ]
         [ Modal.background [ Props [ OnClick closeDisplay ] ] [ ]
@@ -539,7 +538,7 @@ let renderCardInstanceForHand  (dispatch : Msg -> unit)  playerBoard gameId play
             [ renderCardThumbnailForHand card.Card ] ]
 
 
-let playerHand columnsInHand gameId playerId (hand : Hand)  (dispatch : Msg -> unit) pb=
+let playerHand columnsInHand gameId playerId (hand : Hand)  (dispatch : ClientInternalMsg -> unit) pb=
   section [ Class "section" ]
     [ div [ Class "container py-4" ]
         [     h3 [ Class "title is-spaced is-4" ]  [ str "Hand" ]
@@ -604,7 +603,7 @@ let notificationArea (messages :Option<Notification list>) dispatch=
             [
                yield!  Seq.map (fun x -> div [Class "notification is-danger"] [
                                                     button [ Class "delete"
-                                                             OnClick (fun y -> x.Id |> DeleteNotification |> dispatch)
+                                                             OnClick (fun y -> x.Id |> DeleteNotification |> CommandToServer |> dispatch)
                                                             ] []
                                                     str x.Content ]) s
             ]
@@ -627,7 +626,7 @@ let isPlayerAbleToAttack playerId gameStep =
     | Attack c -> c= playerId
     | Reconcile c -> false
 
-let mainLayout model dispatch =
+let mainLayout model (dispatch : ClientInternalMsg -> unit) =
   match extractNeededModelsFromState model with
   | Ok op, Ok opb, Ok cp, Ok cpb ->
       div [ Class "container is-fluid is-full-width" ]
@@ -647,4 +646,52 @@ let mainLayout model dispatch =
           ]
           footerBand
         ]
+  | Ok op, Error opb, Ok cp, Error cpb -> strong [] [ str ("Error finding player boards..." + opb + cpb) ]
   | _ -> strong [] [ str "Error in GameState encountered." ]
+
+module WaitingForAnotherPlayerToJoin =
+    let view =
+            div [ Class "alert is-warning" ] [ str "Waiting for another player to join" ]
+
+module LoginToGameForm =
+
+
+    let init () = { PlayerId = ""; GameId = ""; ErrorMessage = ""  } : LoginToGameFormModel
+
+    let update (msg:LoginToGameFormMsgType) (model:LoginToGameFormModel) =
+        match msg with
+        | PlayerIdUpdated p -> { model with PlayerId = p }
+        | GameIdUpdated p -> { model with GameId = p }
+        | AttemptConnect ->
+            model
+
+    let view (model : LoginToGameFormModel) (dispatch : LoginToGameFormMsgType -> unit) =
+            div [ Id "login" ]
+                [ div [ Class "login-card" ]
+                    [ div [ Class "card-title" ]
+                        [ h1 [ ]
+                            [ str "Set Up Game/Credentials" ] ]
+                      div [ Class "content" ]
+                        [ form [ Method "POST"
+                                 Action "#" ]
+                            [ div [ Class "is-warning" ] [ str model.ErrorMessage ]
+                              input [ Id "playerId"
+                                      Type "text"
+                                      Name "playerId"
+                                      Title "playerId"
+                                      Value model.PlayerId
+                                      OnChange (fun g -> g.Value |> PlayerIdUpdated |> dispatch)
+                                      Placeholder "Player Id" ]
+                              input [ Id "gameId"
+                                      Type "text"
+                                      Name "gameId"
+                                      Title "gameId"
+                                      Value model.GameId
+                                      Placeholder "Game Id"
+                                      OnChange (fun g -> g.Value |> GameIdUpdated |> dispatch)
+                                      ]
+                              button [ Type "button"
+                                       Class "btn btn-primary"
+                                       OnClick (fun _ -> AttemptConnect |> dispatch)
+                                       ]
+                                [ str "Start Playing" ] ] ] ] ]

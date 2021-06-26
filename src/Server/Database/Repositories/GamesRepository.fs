@@ -1,13 +1,18 @@
 namespace Games
 
+open System
 open Database
 open System.Threading.Tasks
+open Events
 open FSharp.Control.Tasks
+open FSharp.Control.Websockets
 open Npgsql
 open Dto
+open Shared
+open Shared.Domain
 
 module Database =
-  let getAll connectionString : Task<Result<GameDto seq, exn>> =
+  let getAll connectionString : Async<Result<GameDto seq, exn>> =
     task {
       use connection = new NpgsqlConnection(connectionString)
       return! query connection """
@@ -25,9 +30,9 @@ module Database =
                     from
                     	game
       """ None
-    }
+    } |> Async.AwaitTask
 
-  let getById connectionString id : Task<Result<GameDto option, exn>> =
+  let getById connectionString id : Async<Result<GameDto option, exn>> =
     task {
       use connection = new NpgsqlConnection(connectionString)
       return! querySingle connection """
@@ -46,9 +51,9 @@ module Database =
                     	game
                     where
                     	game_id = @id""" (Some <| dict ["id" => id])
-    }
+    } |> Async.AwaitTask
 
-  let update connectionString v : Task<Result<int,exn>> =
+  let update connectionString v : Async<Result<int,exn>> =
     task {
       use connection = new NpgsqlConnection(connectionString)
       return! execute connection """
@@ -64,12 +69,13 @@ module Database =
                 	game_notes = @Notes,
                 	game_in_progress = @InProgress,
                 	game_date_started = @DateStarted,
-                	game_last_movement = @LastMovement
+                	game_last_movement = @LastMovement,
+                    game_state = @GameState
                 where
                 	game_id = @GameId""" v
-    }
+    } |> Async.AwaitTask
 
-  let insert connectionString v : Task<Result<int,exn>> =
+  let insert connectionString v : Async<Result<int,exn>> =
     task {
       use connection = new NpgsqlConnection(connectionString)
       return! execute connection """
@@ -95,9 +101,9 @@ module Database =
                 @InProgress,
                 @DateStarted,
                 @LastMovement)""" v
-    }
+    } |> Async.AwaitTask
 
-  let delete connectionString id : Task<Result<int,exn>> =
+  let delete connectionString id : Async<Result<int,exn>> =
     task {
       use connection = new NpgsqlConnection(connectionString)
       return! execute connection """
@@ -106,5 +112,68 @@ module Database =
                 	game
                 where
                 	game_id = @id""" (dict ["id" => id])
-    }
+    } |> Async.AwaitTask
+
+  let attachPlayerAsPlayer2 connectionString gameDto (player : Player) (gameId: GameId) : Async<Result<GameDto option, exn>> =
+        task {
+          use connection = new NpgsqlConnection(connectionString)
+
+          let! playerOneRes = Players.Database.getOrCreatePlayer connectionString gameDto.Player1Id gameDto.Player1Id |> Async.StartAsTask
+          //let gameState = Thoth.Json.Net.Decode.Auto.fromString<GameState>(gameDto.GameState)
+
+          match playerOneRes with
+          | Ok (Some playerOne) ->
+              let gameState = {
+                                                        GameId= gameId
+                                                        NotificationMessages= None
+                                                        PlayerOne= playerOne.PlayerId
+                                                        PlayerTwo= player.PlayerId
+                                                        Players= [playerOne.PlayerId, playerOne; player.PlayerId, player] |> Map.ofList
+                                                        Boards=  [
+                                                            playerOne.PlayerId, GameStateTransitions.takeDeckDealFirstHandAndReturnNewPlayerBoard 0 playerOne.PlayerId { Cards = list.Empty; TopCardsExposed = 0 }
+                                                            player.PlayerId, GameStateTransitions.takeDeckDealFirstHandAndReturnNewPlayerBoard 0 player.PlayerId { Cards = list.Empty; TopCardsExposed = 0 }
+                                                        ] |> Map.ofList
+                                                        CurrentStep= playerOne.PlayerId |> Draw
+                                                        TurnNumber= 1
+                                                    }
+
+              let newGameDto= { gameDto  with
+
+                                   Player2Id = player.PlayerId.ToString()
+                                   GameState = Thoth.Json.Net.Encode.Auto.toString(4,gameState)
+                                    }
+              let! updateResult = ((update connectionString newGameDto) |> Async.StartAsTask)
+              match updateResult  with
+              | Ok i ->
+                    return (Ok (Some newGameDto))
+              | Error e ->
+                  return (e |> Error)
+          | Error e  -> return (e |> Error)
+          | _ -> return (new Exception("welp idk") |> Error)
+        } |> Async.AwaitTask
+
+
+  let createGameFromSinglePlayerAndDeck connectionString (gameId: GameId) (player : Player) : Async<Result<GameDto option, exn>> =
+        task {
+          use connection = new NpgsqlConnection(connectionString)
+
+          let gameDto =  {
+                              GameId = gameId.ToString()
+                              Player1Id = player.PlayerId.ToString()
+                              Player2Id = null
+                              CurrentStep= "NotCurrentlyPlaying"
+                              CurrentPlayerMove = null
+                              Winner = null
+                              Notes = ""
+                              InProgress = false
+                              DateStarted= System.DateTime.Now
+                              LastMovement= System.DateTime.Now
+                              GameState =  ""
+                            }
+          let! gameState = insert connectionString gameDto
+          match gameState with
+          | Error e  -> return (e |> Error)
+          | Ok g ->
+                return (Ok (Some gameDto))
+        } |> Async.AwaitTask
 

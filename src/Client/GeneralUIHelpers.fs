@@ -4,6 +4,8 @@ open Fable.React
 open Fable.React.Props
 open Shared.Domain
 open Events
+open ClientSpecificModels
+
 
 let renderDamageInformationForAttack (attack: Attack) =
     match attack.SpecialEffect with
@@ -35,7 +37,7 @@ let renderAttackRow displayAttackButton canAttack availableResources gameId play
                                                         PlayerId = playerId
                                                         InPlayCreatureId = inPlayCreatureId
                                                         Attack = attack
-                                                    } :  PerformAttackEvent) |> PerformAttack |>  dispatch)
+                                                    } :  PerformAttackEvent) |> PerformAttack |> CommandToServer |>  dispatch)
 
     let displayAttackButton = displayAttackButton && canAttack && (hasEnoughResources availableResources (Map.toList attack.Cost))
 
