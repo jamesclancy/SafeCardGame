@@ -21,76 +21,12 @@ let cardGameServer =
     |> Remoting.withRouteBuilder Route.builder
     |> Remoting.buildProxy<ICardGameApi>
 
-let createInitiallyGameStateFromServer gameId player1Id player2Id =
-    async {
-
-          //Bridge.Send (Connect |> RS)
-          let! player1 = cardGameServer.getCurrentLoggedInPlayer()
-          let! player2 = cardGameServer.getPlayer(player2Id)
-          let! deck1 = testDeckSeqGenerator cardGameServer.getDecks cardGameServer.getCardsForDeck 60
-          let! deck2 = testDeckSeqGenerator cardGameServer.getDecks cardGameServer.getCardsForDeck 60
-
-          match player1, player2 with
-          | Ok p1, Ok p2 ->
-               return {
-                    GameId = gameId
-                    Players =  [
-                                p1.PlayerId, p1;
-                                p2.PlayerId, p2
-                               ] |> Map.ofList
-                    PlayerOne = p1.PlayerId
-                    PlayerTwo = p2.PlayerId
-                    Decks = [   (p1.PlayerId, { TopCardsExposed = 0; Cards = deck1 });
-                                (p2.PlayerId, { TopCardsExposed = 0; Cards = deck2 })]
-                             |> Map.ofSeq
-                 } |> StartGame |> CommandToServer
-          | _, _ ->
-                    return {
-                        GameId =  gameId
-                        Winner = None
-                        Message = None
-                    } |> GameWon |> CommandToServer
-    }
-
 let init : Result<(Model * Cmd<ClientInternalMsg>),string>=
-
-    //Bridge.Send (Connect |> RS)
-    let player1 = createPlayer "Player1" "Player1" 10 "https://picsum.photos/id/1000/2500/1667?blur=5"
-    let player2 = createPlayer "Player2" "Player2" 10 "https://picsum.photos/id/10/2500/1667?blur=5"
-    let gameId =  NonEmptyString.build (Guid.NewGuid().ToString()) |> Result.map GameId
-
-    match player1, player2, gameId with
-    | Ok p1, Ok p2, Ok g ->
-        let playerBoard1 = SampleCardDatabase.emptyPlayerBoard p1
-        let playerBoard2 = SampleCardDatabase.emptyPlayerBoard p2
-        match playerBoard1, playerBoard2 with
-        | Ok pb1, Ok pb2 ->
-          let model : GameState =
-            {
-                GameId = g
-                Players =  [
-                    p1.PlayerId, p1;
-                    p2.PlayerId, p2
-                   ] |> Map.ofList
-                Boards = [
-                    p1.PlayerId, pb1;
-                    p2.PlayerId, pb2
-                   ] |> Map.ofList
-                NotificationMessages = None
-                CurrentStep =  NotCurrentlyPlaying
-                TurnNumber = 0
-                PlayerOne = p1.PlayerId
-                PlayerTwo = p2.PlayerId
-            }
-          //let cmd = Cmd.OfAsync.result (createInitiallyGameStateFromServer g "001" "002")
-          Ok ( { GameState = Some model
+     Ok ( {      GameState = None
                  ConnectionState = DisconnectedFromServer
                  GameId = None
                  LoginPageFormModel = (PageLayoutParts.LoginToGameForm.init ())
-                 PlayerId = Some p1.PlayerId } , Cmd.none )
-        | _ -> "Failed to create player boards" |> Error
-    | _ -> "Failed to create players" |> Error
-
+                 PlayerId = None } , Cmd.none )
 
 let update (cmsg: ClientInternalMsg) (model: Model): Model * Cmd<ClientInternalMsg> =
     match cmsg with

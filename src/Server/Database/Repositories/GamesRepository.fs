@@ -60,7 +60,6 @@ module Database =
                 update
                 	Game
                 set
-                	game_id = @GameId,
                 	game_player_1_id = @Player1Id,
                 	game_player_2_id = @Player2Id,
                 	game_current_step = @CurrentStep,
@@ -112,6 +111,29 @@ module Database =
                 	game
                 where
                 	game_id = @id""" (dict ["id" => id])
+    } |> Async.AwaitTask
+
+  let updateGameState connectionString (gameState : GameState) =
+    task {
+      let currentStep, currentPlayer, winner  = Game.getPlayerAndStepFromGameStata gameState
+      use connection = new NpgsqlConnection(connectionString)
+      return! execute connection """
+                update
+                	Game
+                set
+                    game_current_step = @GameStep,
+                    game_last_movement = @CurrentTime,
+                    game_current_player_move = @PlayerMove,
+                    game_winner = @GameWinner,
+                    game_state = @GameState
+                where
+                	game_id = @GameId""" (dict [
+                                             "GameId" => (gameState.GameId.ToString())
+                                             "GameStep" =>  currentStep
+                                             "GameWinner" => winner
+                                             "CurrentTime" => DateTime.UtcNow
+                                             "PlayerMove" => currentPlayer
+                                             "GameState" => Thoth.Json.Net.Encode.Auto.toString(4,gameState)])
     } |> Async.AwaitTask
 
   let attachPlayerAsPlayer2 connectionString gameDto (player : Player) (gameId: GameId) : Async<Result<GameDto option, exn>> =

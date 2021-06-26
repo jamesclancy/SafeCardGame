@@ -30,13 +30,15 @@ open Events
 open GameStateTransitions
 open Shared.Domain
 
+open Farmer
+
 type ConnectionState =
   | Connected of PlayerId * GameId
   | Disconnected
 
 let connections = ServerHub<ConnectionState, ServerMsg, ClientInternalMsg>().RegisterServer(RS)
 
-let update clientDispatch msg state =
+let update (conf : Config.Config) clientDispatch msg state =
     match msg with
     | RS msg ->
         match msg with
@@ -45,24 +47,30 @@ let update clientDispatch msg state =
             (x,y) |> Connected, Cmd.none
         | ServerCommand (m,gs) ->
             let (x, y) = (migrateGamesStateAndGetNewCommandsFromCommand gs m)
+
             connections.SendClientIf (fun connectionState ->
                                             match connectionState with
                                             | Connected (x, y) when y = gs.GameId -> true
                                             |_ -> false) ( x  |> UpdatedModelForClient)
-
-            state, Cmd.none
+            let cmd : Cmd<ServerMsg> = Cmd.OfAsync.perform (Games.Database.updateGameState conf.connectionString) gs (fun _ -> StatePersistedToIO )
+            state, cmd
     | Closed ->
         Disconnected, Cmd.none
 
 let init _ () = Disconnected, Cmd.none
 
-let socketServer : HttpHandler =
-    Bridge.mkServer "" init update
+let socketServer (conf : Config.Config) : HttpHandler =
+    Bridge.mkServer "" init (update conf)
     |> Bridge.register RS
     |> Bridge.whenDown Closed
     |> Bridge.withServerHub connections
     |> Bridge.run Giraffe.server
 
-let socketServerRouter = router {
-    forward "/socket" socketServer
+let socketServerRouter  = router {
+    forward "/socket" (fun next ctx ->
+        let conf = Config.getConfigFromContext ctx
+        socketServer conf next ctx
+    )
+
+
 }

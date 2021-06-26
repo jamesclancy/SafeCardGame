@@ -89,6 +89,7 @@ type RemoteServerMessage =
 
 type ServerMsg =
   | RS of RemoteServerMessage
+  | StatePersistedToIO
   | Closed
 
 type WsSender = Msg -> unit

@@ -16,3 +16,8 @@ type Model =
       PlayerId: PlayerId option
       LoginPageFormModel: LoginToGameFormModel }
 
+
+type CurrentPage =
+    | GamePlay of GameId * Player * GameState
+    | WaitingForAnotherPlayer of GameId * Player
+    | LoginPage of LoginToGameFormModel
