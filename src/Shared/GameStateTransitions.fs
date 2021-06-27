@@ -1,5 +1,6 @@
 ﻿module GameStateTransitions
 
+open Elmish
 open Events
 open Shared.Domain
 open Operators
@@ -293,3 +294,50 @@ let modifyGameStateTurnToOtherPlayer playerId model =
     getTheOtherPlayer model playerId
     |> tryToModifyGameStateTurnToOtherPlayer model
     |> applyErrorResultToGamesState model
+
+
+let extractGameWonCommandAfterAttack players (gs : GameState) =
+        let deceasedPlayers = Map.toList players
+                                |> List.filter (fun (x,y) -> y.RemainingLifePoints <=0 )
+
+        match deceasedPlayers with
+        | [] ->
+            None
+        | [ (x, y) ] ->
+            Some (({
+                                    GameId= gs.GameId
+                                    Winner= Some (getTheOtherPlayer gs x)
+                                    Message= None
+            } : GameWonEvent) |> GameWon)
+        | _ ->
+            Some ({GameId= gs.GameId; Winner=None; Message= None} |> GameWon)
+
+let migrateGamesStateAndGetNewCommandsFromCommand gs msg =
+    match msg with
+        | StartGame ev ->
+          initializeGameStateFromStartGameEvent ev, None
+        | DrawCard  ev ->
+          modifyGameStateFromDrawCardEvent ev gs, None
+        | DiscardCard ev ->
+           modifyGameStateFromDiscardCardEvent ev gs, None
+        | ToggleZoomOnCard ev ->
+           modifyGameStateFromToggleZoomOnCardEvent ev gs, None
+        | PlayCard ev ->
+          modifyGameStateFromPlayCardEvent ev gs, None
+        | EndPlayStep ev ->
+          { gs with CurrentStep = (Attack ev.PlayerId) }, None
+        | PerformAttack  ev ->
+          let newModel = modifyGameStateFromPerformAttackEvent ev gs
+          let cmd =  extractGameWonCommandAfterAttack newModel.Players newModel
+          newModel, cmd
+        | SkipAttack ev ->
+          { gs with CurrentStep = (Reconcile ev.PlayerId) } , None
+        | EndTurn ev ->
+            modifyGameStateTurnToOtherPlayer ev.PlayerId gs, None
+        | DeleteNotification dn ->
+           removeNotificationFromGameState gs dn, None
+        | GameWon ev ->
+            let newStep =  { WinnerId =  ev.Winner; Message = formatGameOverMessage ev.Message } |> GameOver
+            { gs with CurrentStep = newStep }, None
+        | SwapPlayer ->
+            { gs with PlayerOne = gs.PlayerTwo; PlayerTwo = gs.PlayerOne }, None

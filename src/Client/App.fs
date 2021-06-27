@@ -2,10 +2,12 @@ module App
 
 open Elmish
 open Elmish.React
+open Elmish.Bridge
 
 #if DEBUG
 open Elmish.Debug
 open Elmish.HMR
+open Index
 #endif
 
 match Index.init with
@@ -13,11 +15,15 @@ match Index.init with
     let placeHolderFunc () =
         gamesState, dispatch
     Program.mkProgram placeHolderFunc Index.update Index.view
+    |> Program.withBridgeConfig (Bridge.endpoint "./socket" |> Bridge.withUrlMode Append)
     |> Program.withConsoleTrace
+   // |> Program.withSubscription Channel.subscription
     |> Program.withReactSynchronous "elmish-app"
-    #if DEBUG
+    |> Program.withConsoleTrace
     |> Program.withDebugger
-    #endif
+    (*#if DEBUG
+    |> Program.withDebugger
+    #endif*)
     |> Program.run
 | _ ->
     ()

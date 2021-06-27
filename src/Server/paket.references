@@ -6,3 +6,6 @@ Npgsql.FSharp
 Giraffe.ViewEngine
 Farmer
 Dapper
+Thoth.Json.Net
+Thoth.Json.Giraffe
+Elmish.Bridge.Giraffe

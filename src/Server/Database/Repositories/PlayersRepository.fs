@@ -120,5 +120,3 @@ module Database =
                 return (p |> Some |> Ok)
             | Error e -> return (Exception(e) |> Error)
       } |> Async.AwaitTask
-
-

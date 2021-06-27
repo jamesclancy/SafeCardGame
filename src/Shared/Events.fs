@@ -77,4 +77,42 @@ type Msg =
     | GameWon of GameWonEvent
     | SwapPlayer
 
-type BridgedMsg = Msg * PlayerId
+type BridgedMsg
+    = Msg * PlayerId
+
+type WebSocketClientMessage =
+    | TextMessage of string
+
+type RemoteServerMessage =
+| Connect of PlayerId * GameId
+| ServerCommand of Msg * GameState
+
+type ServerMsg =
+  | RS of RemoteServerMessage
+  | StatePersistedToIO
+  | Closed
+
+type WsSender = Msg -> unit
+type BroadcastMode = ViaWebSocket | ViaHTTP
+
+type ConnectionState =
+    | DisconnectedFromServer | ConnectedToServer of WsSender | Connecting
+    member this.IsConnected =
+        match this with
+        | ConnectedToServer _ -> true
+        | DisconnectedFromServer | Connecting -> false
+
+type LoginToGameFormMsgType =
+        | PlayerIdUpdated of string
+        | GameIdUpdated of string
+        | AttemptConnect
+        | AttemptConnectToExistingGame of GameId
+        | FailedLogin of string
+        | SuccessfulLogin of Option<GameState> * ClientInternalMsg * GameId * PlayerId
+and ClientInternalMsg  =
+       | UpdatedModelForClient of GameState
+       | CommandToServer of Msg
+       | GameAvailable of PlayerId * GameId
+       | GameNoLongerAvailable of GameId
+       | ConnectionChange of ConnectionState
+       | LoginPageFormMsg of LoginToGameFormMsgType

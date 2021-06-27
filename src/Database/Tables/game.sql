@@ -14,4 +14,3 @@ constraint game_player_1_id_fk_player foreign key(game_player_1_id) references p
 constraint game_player_2_id_fk_player foreign key(game_player_2_id) references player(player_id),
 constraint game_current_player_move_fk_player foreign key(game_current_player_move) references player(player_id)
 );
-
