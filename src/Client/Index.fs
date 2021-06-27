@@ -3,6 +3,7 @@ module Index
 open System
 open Browser.Types
 open Elmish
+open Fable.Core.JS
 open Fable.Remoting.Client
 open GeneralUIHelpers
 open PageLayoutParts
@@ -21,12 +22,18 @@ let cardGameServer =
     |> Remoting.withRouteBuilder Route.builder
     |> Remoting.buildProxy<ICardGameApi>
 
-let init : Result<(Model * Cmd<ClientInternalMsg>),string>=
-     Ok ( {      GameState = None
-                 ConnectionState = DisconnectedFromServer
-                 GameId = None
-                 LoginPageFormModel = (PageLayoutParts.LoginToGameForm.init ())
-                 PlayerId = None } , Cmd.none )
+let init : Model * Cmd<ClientInternalMsg>=
+
+     let cmd = Cmd.OfAsync.perform cardGameServer.getCurrentLoggedInPlayer ()
+                   (fun res -> match res with
+                               | Ok p -> p.PlayerId.ToString() |> PlayerIdUpdated |> LoginPageFormMsg
+                               | Error e -> e |> FailedLogin |> LoginPageFormMsg)
+
+     { GameState = None
+       ConnectionState = DisconnectedFromServer
+       GameId = None
+       LoginPageFormModel = (PageLayoutParts.LoginToGameForm.init None)
+       PlayerId = None } , Cmd.batch [ cmd; Cmd.ofMsg NeedInformationForLobby ]
 
 let update (cmsg: ClientInternalMsg) (model: Model): Model * Cmd<ClientInternalMsg> =
     match cmsg with
@@ -77,6 +84,20 @@ let update (cmsg: ClientInternalMsg) (model: Model): Model * Cmd<ClientInternalM
         | Some gs ->
             model, Cmd.bridgeSend  ( (msg, gs) |> ServerCommand |> RS)
         | None -> model, Cmd.none
+    | NeedInformationForLobby ->
+
+        let cmd = match model.LoginPageFormModel.OpenGames.IsEmpty with
+                  | true -> Cmd.OfAsync.perform (fun _ -> async {
+                                                    // quality resilience
+                                                    do! Async.Sleep 500
+                                                    Bridge.Send (GetCurrentAvailableGames |> RS)
+                                                    return NeedInformationForLobby
+                                             }) () id
+                  | false -> Cmd.none
+
+        let cmdBatch = Cmd.batch [ cmd ]//Cmd.bridgeSendOr (GetCurrentAvailableGames |> RS) (NeedInformationForLobby)]
+        model, cmdBatch
+
 
 let view (model : Model) (dispatch : ClientInternalMsg -> unit) =
     match model.GameId, model.GameState with
