@@ -4,6 +4,7 @@ open System
 open Fable.React
 open Fable.React.Props
 open Fulma
+open Fulma.Extensions.Wikiki
 open Shared.Domain
 open GeneralUIHelpers
 open Events
@@ -657,13 +658,13 @@ module WaitingForAnotherPlayerToJoin =
 module LoginToGameForm =
 
 
-    let init () = { PlayerId = ""; GameId = ""; ErrorMessage = ""; OpenGames = Map.empty  } : LoginToGameFormModel
+    let init playerId = { PlayerId = Option.fold (fun _ x -> (x.ToString())) "" playerId; GameId = ""; ErrorMessage = ""; OpenGames = Map.empty  } : LoginToGameFormModel
 
     let update (msg:LoginToGameFormMsgType) (model:LoginToGameFormModel) =
         match msg with
         | PlayerIdUpdated p -> { model with PlayerId = p }
         | GameIdUpdated p -> { model with GameId = p }
-        | AttemptConnect ->
+        | AttemptConnect | AttemptConnectToExistingGame _ | FailedLogin _  | SuccessfulLogin (_,_,_,_) ->
             model
 
     let viewAvailableGameInformation (model:Map<GameId, PlayerId>) (dispatch : LoginToGameFormMsgType -> unit) =
@@ -671,17 +672,29 @@ module LoginToGameForm =
         | true -> ul [  ] [  ]
         | false ->
                 let lis = seq {
-                            yield (li [ ] [ str "GameId - PlayerId" ] )
+                            yield (thead [ ]
+                                               [ tr [ ] [
+                                                        th [] [ str "GameId" ]
+                                                        th [] [ str "PlayerId" ]
+                                                      ]]  )
                             for v in model do
-                                yield (li [ ] [
-                                       button [
-                                           Type "button"
-                                           Class "btn btn-primary"
-                                           OnClick (fun _ -> v.Key |> AttemptConnectToExistingGame |> dispatch)
-                                           ] [ str (sprintf "%s - %s" (v.Key.ToString()) (v.Value.ToString())) ] ])
+                                yield (tr [ ] [
+                                           td [] [ str (v.Key.ToString()) ]
+                                           td [] [ str (v.Value.ToString()) ]
+                                           td [] [  Button.button [
+                                                           Button.Color IsPrimary
+                                                           Button.Props [
+                                                               Type "button"
+                                                               OnClick (fun _ -> v.Key |> AttemptConnectToExistingGame |> dispatch)
+                                                               Tooltip.dataTooltip "Pre-populate this Game Id Above"
+                                                           ]
+                                                           Button.CustomClass (Tooltip.ClassName + " " + Tooltip.IsTooltipRight)
+                                                       ] [ str "Populate Game Id" ] ] ])
                         }
 
-                ul [ Class "notification is-primary"  ] [ yield! lis ]
+                Table.table [ Table.IsBordered
+                              Table.IsFullWidth
+                              Table.IsStriped ] [ yield! lis ]
 
     let viewErrorMessage (model:string) =
         match String.IsNullOrWhiteSpace model with
@@ -689,33 +702,44 @@ module LoginToGameForm =
         | true -> div [ Class "" ] [ str model ]
 
     let view (model : LoginToGameFormModel) (dispatch : LoginToGameFormMsgType -> unit) =
-            div [ Id "login" ]
-                [ div [ Class "login-card" ]
-                    [ div [ Class "card-title" ]
-                        [ h1 [ ]
-                            [ str "Set Up Game/Credentials" ] ]
-                      div [ Class "content" ]
-                        [ form [ Method "POST"
-                                 Action "#" ]
-                            [ (viewErrorMessage model.ErrorMessage)
-                              (viewAvailableGameInformation model.OpenGames dispatch)
-                              input [ Id "playerId"
-                                      Type "text"
-                                      Name "playerId"
-                                      Title "playerId"
-                                      Value model.PlayerId
-                                      OnChange (fun g -> g.Value |> PlayerIdUpdated |> dispatch)
-                                      Placeholder "Player Id" ]
-                              input [ Id "gameId"
-                                      Type "text"
-                                      Name "gameId"
-                                      Title "gameId"
-                                      Value model.GameId
-                                      Placeholder "Game Id"
-                                      OnChange (fun g -> g.Value |> GameIdUpdated |> dispatch)
-                                      ]
-                              button [ Type "button"
-                                       Class "btn btn-primary"
-                                       OnClick (fun _ -> AttemptConnect |> dispatch)
-                                       ]
-                                [ str "Start Playing" ] ] ] ] ]
+       Columns.columns [ ]
+        [ Column.column [ Column.Offset (Screen.All, Column.Is3)
+                          Column.Width (Screen.All, Column.Is6) ]
+            [ Panel.panel [ ]
+                [ Panel.heading [ ] [ str "Set Up Game/Credentials"]
+                  Panel.Block.div [ ] [ (viewErrorMessage model.ErrorMessage) ]
+                  Panel.Block.div [ ] [  Input.text [
+                                                  Input.Size IsSmall
+                                                  Input.Props [
+                                                      Id "playerId"
+                                                      Type "text"
+                                                      Name "playerId"
+                                                      Title "playerId"
+                                                      OnChange (fun g -> g.Value |> PlayerIdUpdated |> dispatch) ]
+                                                  Input.Value model.PlayerId
+                                                  Input.Placeholder "Player Id" ] ]
+                  Panel.Block.div [ ] [ Input.text [
+                                                  Input.Size IsSmall
+                                                  Input.Props [
+                                                      Id "gameId"
+                                                      Type "text"
+                                                      Name "gameId"
+                                                      Title "gameId"
+                                                      OnChange (fun g -> g.Value |> GameIdUpdated |> dispatch) ]
+                                                  Input.Value model.GameId
+                                                  Input.Placeholder "Game Id"
+                                      ] ]
+                  Panel.Block.div [ ] [ Button.button [
+                                              Button.Color IsPrimary
+                                              Button.IsOutlined
+                                              Button.IsFullWidth
+                                              Button.Props [
+                                                 Type "button"
+                                                 OnClick (fun _ -> AttemptConnect |> dispatch)
+                                                 ] ] [ str "Try to Start Game" ] ] ]
+              Panel.panel [ ]
+                [ Panel.heading [ ] [ str "Set Up Game/Credentials"]
+                  Panel.Block.div [] [
+                          h2 [] [ str "Join a game waiting for a player..." ] ]
+                  Panel.Block.div [ ] [
+                          (viewAvailableGameInformation model.OpenGames dispatch) ] ] ] ]

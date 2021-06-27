@@ -1,4 +1,4 @@
-﻿module SocketServer
+module SocketServer
 
 open Fable.Remoting.Server
 open Fable.Remoting.Giraffe
@@ -38,6 +38,15 @@ type ConnectionState =
 
 let connections = ServerHub<ConnectionState, ServerMsg, ClientInternalMsg>().RegisterServer(RS)
 
+let sendGameNoLongerAvailableNotifications m =
+            match m with
+            | StartGame sg ->
+                    connections.SendClientIf (fun connectionState ->
+                                            match connectionState with
+                                            | Connected (x, y) -> false
+                                            |_ -> true) ( sg.GameId |> GameNoLongerAvailable) |> ignore
+            | _ -> ()
+
 let update (conf : Config.Config) clientDispatch msg state =
     match msg with
     | RS msg ->
@@ -50,15 +59,32 @@ let update (conf : Config.Config) clientDispatch msg state =
                                             |_ -> true) ( (x, y)  |> GameAvailable)
 
             (x,y) |> Connected, Cmd.none
+        | GetCurrentAvailableGames ->
+                connections.GetModels ()
+                               |> List.choose (fun connectionState ->
+                                            Console.WriteLine connectionState
+                                            match connectionState with
+                                            | Connected (x, y) -> Some (x, y)
+                                            |_ -> None)
+                               |> List.groupBy (fun (x, y) -> y)
+                               |> List.choose (fun (gi, ls) ->
+                                       match ls with
+                                       | [(innerGi, innerPi)] -> Some ( (innerGi, innerPi) |> GameAvailable)
+                                       | _ -> None
+                                   )
+                               |> List.map  (fun ga ->
+                                                   connections.SendClientIf (fun connectionState ->
+                                                                match connectionState with
+                                                                | Connected (x, y) -> false
+                                                                |_ -> true) (ga) |> ignore
+                                                   true
+                                            ) |> ignore
+
+                state, Cmd.none
         | ServerCommand (m,gs) ->
             let (x, y) = (migrateGamesStateAndGetNewCommandsFromCommand gs m)
 
-            match m with
-            | StartGame sg ->
-                    connections.SendClientIf (fun connectionState ->
-                                            match connectionState with
-                                            | Connected (x, y) -> false
-                                            |_ -> true) ( sg.GameId |> GameNoLongerAvailable) |> ignore
+            sendGameNoLongerAvailableNotifications m |> ignore
 
             connections.SendClientIf (fun connectionState ->
                                             match connectionState with
@@ -73,6 +99,8 @@ let update (conf : Config.Config) clientDispatch msg state =
             state, cmd
     | Closed ->
         Disconnected, Cmd.none
+    | StatePersistedToIO ->
+        state, Cmd.none
 
 let init _ () = Disconnected, Cmd.none
 

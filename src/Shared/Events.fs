@@ -85,6 +85,7 @@ type WebSocketClientMessage =
 
 type RemoteServerMessage =
 | Connect of PlayerId * GameId
+| GetCurrentAvailableGames
 | ServerCommand of Msg * GameState
 
 type ServerMsg =
@@ -116,3 +117,4 @@ and ClientInternalMsg  =
        | GameNoLongerAvailable of GameId
        | ConnectionChange of ConnectionState
        | LoginPageFormMsg of LoginToGameFormMsgType
+       | NeedInformationForLobby

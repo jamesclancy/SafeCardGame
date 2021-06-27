@@ -355,7 +355,7 @@ module Card =
                     ResourcesAdded = ResourcePool.emptyDictionary
                }: CardDto
 
-    let toDomain (cc:CardDto) :Result<Card,string> =
+    let toDomain (cc:CardDto) : Result<Card,string> =
         CollectionManipulation.result {
                     let! cardId = cc.CardId |> NonEmptyString.build
                     let! imageUrl = cc.ImageUrl |> ImageUrlString.build
@@ -414,7 +414,6 @@ module Card =
                                 EnterSpecialEffects = enterSpecialEffects
                                 ExitSpecialEffects = exitSpecialEffects
                         } |> EffectCard
-
-
+                    | _ -> return! ((sprintf "unknown card type \"%s\"encountered in json" cc.CardType) |> Error )
         }
 

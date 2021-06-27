@@ -75,6 +75,8 @@ let constructGameFromModelAndDatabaseInfo connectionString (model: GetOrCreateGa
             match ((Games.Database.createGameFromSinglePlayerAndDeck connectionString gameId p) |> Async.RunSynchronously) with
             | Ok (Some finalGame) ->
                     return gameId, finalGame, p
+            | Ok None ->
+                    return! (Exception "game dto not loaded" |> Error)
             | Error e -> return! (e |> Error)
         | _, _ -> return!  (Exception "Unable to create game" |> Error)
 
