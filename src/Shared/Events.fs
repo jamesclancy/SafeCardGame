@@ -106,6 +106,7 @@ type LoginToGameFormMsgType =
         | PlayerIdUpdated of string
         | GameIdUpdated of string
         | AttemptConnect
+        | AttemptConnectToExistingGame of GameId
         | FailedLogin of string
         | SuccessfulLogin of Option<GameState> * ClientInternalMsg * GameId * PlayerId
 and ClientInternalMsg  =

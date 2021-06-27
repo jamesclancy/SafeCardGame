@@ -671,9 +671,14 @@ module LoginToGameForm =
         | true -> ul [  ] [  ]
         | false ->
                 let lis = seq {
-                            yield (li [ ] [ str "GameId - PlayerId" ])
+                            yield (li [ ] [ str "GameId - PlayerId" ] )
                             for v in model do
-                                yield (li [ ] [ str (sprintf "%s - %s" (v.Key.ToString()) (v.Value.ToString())) ])
+                                yield (li [ ] [
+                                       button [
+                                           Type "button"
+                                           Class "btn btn-primary"
+                                           OnClick (fun _ -> v.Key |> AttemptConnectToExistingGame |> dispatch)
+                                           ] [ str (sprintf "%s - %s" (v.Key.ToString()) (v.Value.ToString())) ] ])
                         }
 
                 ul [ Class "notification is-primary"  ] [ yield! lis ]

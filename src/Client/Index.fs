@@ -56,6 +56,8 @@ let update (cmsg: ClientInternalMsg) (model: Model): Model * Cmd<ClientInternalM
                                          ]
                 { model with GameState = gs; PlayerId = Some pi; GameId = Some gi }, cmdBatch
             | _ -> { model with GameState = gs; PlayerId = Some pi; GameId = Some gi }, Cmd.bridgeSend ( (pi, gi) |> Connect)
+        | AttemptConnectToExistingGame gi ->
+            { model with LoginPageFormModel = { model.LoginPageFormModel with  GameId = (gi.ToString())} }, Cmd.none
         | AttemptConnect  ->
                 let cmd = Cmd.OfAsync.perform cardGameServer.getOrCreateGame
                             { PlayerId = model.LoginPageFormModel.PlayerId
