@@ -628,32 +628,86 @@ let isPlayerAbleToAttack playerId gameStep =
     | Attack c -> c= playerId
     | Reconcile c -> false
 
-let mainLayout model (dispatch : ClientInternalMsg -> unit) =
-  match extractNeededModelsFromState model with
-  | Ok op, Ok opb, Ok cp, Ok cpb ->
-      div [ Class "container is-fluid is-full-width" ]
-        [ topNavigation cp dispatch
-          div [ Class "columns is-fluid is-full-width"] [
-              div [ Class "column is-4"] [
-                    div [ Class "container is-fluid is-full-width"] [
-                    enemyStats op opb
-                    enemyCreatures op opb
-                    ] ]
-              div [ Class "column is-8"] [
-                    playerControlCenter cp cpb model dispatch
-                    notificationArea model.NotificationMessages dispatch
-                    playerCreatures dispatch  model.GameId cp.PlayerId (isPlayerAbleToAttack cp.PlayerId model.CurrentStep)  cp cpb
-                    playerHand 12 model.GameId cp.PlayerId cpb.Hand dispatch cpb
-                ]
-          ]
-          footerBand
+
+let layoutGameBoard  model dispatch op opb cp  cpb   =
+    div [ Class "container is-fluid is-full-width" ]
+      [ topNavigation cp dispatch
+        div [ Class "columns is-fluid is-full-width"] [
+            div [ Class "column is-4"] [
+                  div [ Class "container is-fluid is-full-width"] [
+                  enemyStats op opb
+                  enemyCreatures op opb
+                  ] ]
+            div [ Class "column is-8"] [
+                  playerControlCenter cp cpb model dispatch
+                  notificationArea model.NotificationMessages dispatch
+                  playerCreatures dispatch  model.GameId cp.PlayerId (isPlayerAbleToAttack cp.PlayerId model.CurrentStep)  cp cpb
+                  playerHand 12 model.GameId cp.PlayerId cpb.Hand dispatch cpb
+              ]
         ]
-  | Ok op, Error opb, Ok cp, Error cpb -> strong [] [ str ("Error finding player boards..." + opb + cpb) ]
-  | _ -> strong [] [ str "Error in GameState encountered." ]
+        footerBand
+      ]
+
+let winnerModal (gameOverInfo : GameOverStep) (dispatch : ClientInternalMsg -> unit) =
+    match gameOverInfo.WinnerId with
+    | Some w ->
+        Modal.modal [ Modal.IsActive true ]
+            [ Modal.background [ ] [ ]
+              Modal.content [ ]
+                [ Box.box' [ ]
+                    [
+                        h1 [] [ str (sprintf "%s Won!" (w.ToString()))]
+                        p [] [str gameOverInfo.Message]
+                    ] ]
+              Modal.Card.foot [] [
+                Button.button [
+                    Button.Color IsPrimary
+                    Button.Props [ OnClick (fun _ -> NavigateBackToLobby |> dispatch)]
+                    ] [ str "Back To Lobby" ]
+              ] ]
+    | None ->
+        Modal.modal [ Modal.IsActive true ]
+            [ Modal.background [ ] [ ]
+              Modal.content [ ]
+                [ Box.box' [ ]
+                    [
+                        h1 [] [ str "Game Ended Without Winner"]
+                        p [] [str gameOverInfo.Message]
+                        ] ]
+              Modal.Card.foot [] [
+                Button.button [
+                        Button.Color IsPrimary
+                        Button.Props [ OnClick (fun _ -> NavigateBackToLobby |> dispatch)]
+                        ] [ str "Back To Lobby" ]
+              ] ]
+
+let mainLayout model (dispatch : ClientInternalMsg -> unit) =
+    div [] [
+            yield! seq {
+                  match extractNeededModelsFromState model with
+                  | Ok op, Ok opb, Ok cp, Ok cpb, None ->
+                        yield layoutGameBoard  model dispatch op opb cp  cpb
+                   | Ok op, Ok opb, Ok cp, Ok cpb, Some w ->
+                        yield winnerModal w dispatch
+                        yield layoutGameBoard  model dispatch op opb cp  cpb
+                  | Ok op, Error opb, Ok cp, Error cpb, _ -> yield strong [] [ str ("Error finding player boards..." + opb + cpb) ]
+                  | _ ->  yield strong [] [ str "Error in GameState encountered." ]
+              } ]
 
 module WaitingForAnotherPlayerToJoin =
-    let view =
-            div [ Class "alert is-warning" ] [ str "Waiting for another player to join" ]
+    let view (dispatch : ClientInternalMsg -> unit) =
+        PageLoader.pageLoader [ PageLoader.Color IsDark
+                                PageLoader.IsActive true ] [ span [ Class "title has-text-centered" ]
+                                                                                    [ str "Waiting for another player to join...."
+                                                                                      br []
+                                                                                      Button.button [ Button.Size IsSmall
+                                                                                                      Button.Color IsDark
+                                                                                                      Button.Props [
+                                                                                                          Type "button"
+                                                                                                          OnClick (fun _ -> NavigateBackToLobby |> dispatch)
+                                                                                                      ] ] [ str "Back to Lobby" ]
+
+                                                                                       ] ]
 
 module LoginToGameForm =
 

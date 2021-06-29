@@ -112,6 +112,7 @@ type LoginToGameFormMsgType =
         | SuccessfulLogin of Option<GameState> * ClientInternalMsg * GameId * PlayerId
 and ClientInternalMsg  =
        | UpdatedModelForClient of GameState
+       | NavigateBackToLobby
        | CommandToServer of Msg
        | GameAvailable of PlayerId * GameId
        | GameNoLongerAvailable of GameId

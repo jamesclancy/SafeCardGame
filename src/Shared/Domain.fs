@@ -214,8 +214,14 @@ module Domain =
         | true, p -> p |> Ok
         | false, _ -> "Unable to locate current player in board list" |> Error
 
+    let currentWinnerOnBoard (model : GameState) =
+        match model.CurrentStep with
+        | Draw _ | Play _ | Attack _| Reconcile _ | NotCurrentlyPlaying -> None
+        | GameOver g -> Some g
+
+
     let extractNeededModelsFromState (model: GameState) =
-        opponentPlayer model, opponentPlayerBoard model, currentPlayer model, currentPlayerBoard model
+        opponentPlayer model, opponentPlayerBoard model, currentPlayer model, currentPlayerBoard model, currentWinnerOnBoard model
 
     let createNotification message ={Id = Guid.NewGuid(); Content = message}
 
