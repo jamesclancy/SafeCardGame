@@ -70,15 +70,19 @@ let update (cmsg: ClientInternalMsg) (model: Model): Model * Cmd<ClientInternalM
                             { PlayerId = model.LoginPageFormModel.PlayerId
                               GameId = model.LoginPageFormModel.GameId}
                             (fun gameStateResult ->
+                                Console.WriteLine "get game api call completed...."
                                 match gameStateResult with
                                 | Error e ->
                                     e |> FailedLogin |> LoginPageFormMsg
                                 | Ok (gs, cmd, gi, pi) ->
+                                    Console.WriteLine "received game from server...."
                                     (gs, cmd, gi, pi)  |> SuccessfulLogin |> LoginPageFormMsg
                             )
                 model, cmd
         | _ ->
             { model with LoginPageFormModel = PageLayoutParts.LoginToGameForm.update ltg model.LoginPageFormModel }, Cmd.none
+    | NavigateBackToLobby ->
+        {model with GameState = None; GameId = None}, Cmd.bridgeSend Closed
     | CommandToServer (msg) ->
         match model.GameState with
         | Some gs ->
@@ -104,6 +108,6 @@ let view (model : Model) (dispatch : ClientInternalMsg -> unit) =
     | Some gameId, Some gs ->
         PageLayoutParts.mainLayout gs dispatch
     | Some gameId, None ->
-        PageLayoutParts.WaitingForAnotherPlayerToJoin.view
+        PageLayoutParts.WaitingForAnotherPlayerToJoin.view dispatch
     | _,_ ->
         PageLayoutParts.LoginToGameForm.view model.LoginPageFormModel (fun (x : LoginToGameFormMsgType) -> x |> LoginPageFormMsg |> dispatch)

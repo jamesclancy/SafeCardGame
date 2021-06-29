@@ -62,7 +62,6 @@ let update (conf : Config.Config) clientDispatch msg state =
         | GetCurrentAvailableGames ->
                 connections.GetModels ()
                                |> List.choose (fun connectionState ->
-                                            Console.WriteLine connectionState
                                             match connectionState with
                                             | Connected (x, y) -> Some (x, y)
                                             |_ -> None)
