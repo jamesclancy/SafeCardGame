@@ -7,8 +7,6 @@ open Shared.Domain
 open Newtonsoft.Json
 open System.Collections.Generic
 
-let connectionString = "Host=localhost; Database=postgres; Username=postgres; Password=trident1814;"
-
 let returnOkayResultOrRaiseError res =
     match res with
     | Ok s -> s
@@ -94,7 +92,7 @@ module RowMappings =
 
 type PlayerRepository () =
 
-    member _.GetAll () =
+    member _.GetAll connectionString =
         async {
              let! query =
                 connectionString
@@ -110,7 +108,7 @@ type PlayerRepository () =
                 |> List.toSeq
         }
 
-    member _.Get playerId =
+    member _.Get connectionString playerId =
         async {
              let! query =
                 connectionString
@@ -124,7 +122,7 @@ type PlayerRepository () =
                 |> Player.toDomain
         }
 
-    member _.Update (player : Player) =
+    member _.Update connectionString (player : Player) =
         async {
              let! query =
                 connectionString
@@ -153,7 +151,7 @@ type PlayerRepository () =
              return query
         }
 
-    member _.UpdateLastLoginTime (player : Player) =
+    member _.UpdateLastLoginTime connectionString (player : Player) =
         async {
              let newPlayer = { player with LastLogin = DateTime.UtcNow}
 
@@ -178,7 +176,7 @@ type PlayerRepository () =
 
 type CardRepository () =
 
-    member _.GetAll () =
+    member _.GetAll connectionString =
         async {
          let! query =
             connectionString
@@ -194,7 +192,7 @@ type CardRepository () =
             |> List.toSeq
         }
 
-    member _.Get cardId =
+    member _.Get connectionString cardId =
         async {
              let! query =
                 connectionString
@@ -209,7 +207,7 @@ type CardRepository () =
 
 type DeckRepository () =
 
-    member _.GetAll () =
+    member _.GetAll connectionString =
             async {
                  let! query =
                     connectionString
@@ -222,7 +220,7 @@ type DeckRepository () =
                     |> List.toSeq
             }
 
-    member _.GetCardsForDeck deck_id =
+    member _.GetCardsForDeck connectionString deck_id =
             async {
                  let! query =
                     connectionString

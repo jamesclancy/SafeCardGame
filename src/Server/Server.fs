@@ -28,6 +28,9 @@ open Elmish.Bridge
 open Microsoft.Extensions.Logging
 open Shared.Domain
 open SocketServer
+open System.Collections.Generic
+open System.Collections
+open Microsoft.AspNetCore.HttpOverrides
 
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores <- true;
 
@@ -91,7 +94,7 @@ let gameStateFromDtoOrEmpty (gameDto) =
           | Ok g -> Some g
           | Error e -> None //failwith ("Oh noe!" + e)
 
-let getOrCreateGame (ctx : HttpContext) (model: GetOrCreateGameRequest)  (getDecks : unit -> Async<DeckDto seq>) (getCardsForDeck : string ->  Async<Card seq>)
+let getOrCreateGame (ctx : HttpContext) (model: GetOrCreateGameRequest)  (getDecks : Async<DeckDto seq>) (getCardsForDeck : string ->  Async<Card seq>)
         : Async<Result<GameDto * ClientInternalMsg * Player * GameId, string>>
     =
         async {
@@ -103,7 +106,7 @@ let getOrCreateGame (ctx : HttpContext) (model: GetOrCreateGameRequest)  (getDec
           let gameResult = constructGameFromModelAndDatabaseInfo conf.connectionString model player game
 
           let! deck1 = GameSetup.testDeckSeqGenerator getDecks getCardsForDeck 60
-          let! deck2 = GameSetup.testDeckSeqGenerator  getDecks getCardsForDeck 60
+          let! deck2 = GameSetup.testDeckSeqGenerator getDecks getCardsForDeck 60
 
           match gameResult with
           | Ok (gameId, gameDto, player)
@@ -137,18 +140,19 @@ let getOrCreateGame (ctx : HttpContext) (model: GetOrCreateGameRequest)  (getDec
     }
 
 let gameApi ctx  : ICardGameApi =
+    let conf = Config.getConfigFromContext ctx
     {
         getCurrentLoggedInPlayer = fun () -> getCurrentPlayer ctx
-        getPlayers = fun () ->  playerRepository.GetAll()
-        getPlayer = fun playerId ->  playerRepository.Get(playerId)
-        getCards = fun () -> cardRepository.GetAll()
-        getCard = fun cardId -> cardRepository.Get(cardId)
-        getDecks = fun () -> deckRepository.GetAll()
-        getCardsForDeck = fun deckId -> deckRepository.GetCardsForDeck(deckId)
+        getPlayers = fun () ->  playerRepository.GetAll conf.connectionString
+        getPlayer = fun playerId ->  playerRepository.Get conf.connectionString playerId
+        getCards = fun () -> cardRepository.GetAll conf.connectionString
+        getCard = fun cardId -> cardRepository.Get conf.connectionString cardId
+        getDecks = fun () -> deckRepository.GetAll conf.connectionString
+        getCardsForDeck = fun deckId -> deckRepository.GetCardsForDeck conf.connectionString deckId
         getOrCreateGame = fun req ->
             async {
                      try
-                        let! res = getOrCreateGame ctx req deckRepository.GetAll deckRepository.GetCardsForDeck
+                        let! res = getOrCreateGame ctx req (deckRepository.GetAll conf.connectionString) (deckRepository.GetCardsForDeck conf.connectionString)
                         match res with
                         | Ok (a, b, c, d) ->
                             return (gameStateFromDtoOrEmpty a.GameState, b, d, c.PlayerId) |> Ok
@@ -216,11 +220,43 @@ let configureHost (hostBuilder : IHostBuilder) =
         if ctx.HostingEnvironment.IsDevelopment() then
             cfg.AddUserSecrets<UserSecretsTarget>() |> ignore
 
+        cfg.AddEnvironmentVariables() |> ignore
+
+        if not(cfg.Properties.ContainsKey("GitHubOAuthClientId")) then
+            if not(String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GITHUB_CLIENT_ID"))) then
+                ["GitHubOAuthClientId",  Environment.GetEnvironmentVariable("GITHUB_CLIENT_ID")] |> dict |> cfg.AddInMemoryCollection |> ignore
+
+
+        if not(cfg.Properties.ContainsKey("GitHubOAuthKey")) then
+            if not(String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GITHUB_CLIENT_KEY"))) then
+                ["GitHubOAuthKey",  Environment.GetEnvironmentVariable("GITHUB_CLIENT_KEY")] |> dict |> cfg.AddInMemoryCollection |> ignore
+
+        if not(cfg.Properties.ContainsKey("ConnectionString")) then
+
+            let connectionUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
+            if not(String.IsNullOrWhiteSpace connectionUrl) then
+                let databaseUri = Uri(connectionUrl)
+
+                let db = databaseUri.LocalPath.TrimStart('/');
+                let userInfo = databaseUri.UserInfo.Split(':', StringSplitOptions.RemoveEmptyEntries);
+
+                let formatedString =  $"User ID={userInfo.[0]};Password={userInfo.[1]};Host={databaseUri.Host};Port={databaseUri.Port};Database={db};Pooling=true;SSL Mode=Require;Trust Server Certificate=True;"
+
+                ["ConnectionString",  formatedString] |> dict |> cfg.AddInMemoryCollection |> ignore
+
+
     ) |> ignore
     hostBuilder
 
 
 let configureGitHubAuth (services : IServiceCollection) =
+
+
+        services.Configure<ForwardedHeadersOptions>(fun (options:ForwardedHeadersOptions) ->  options.ForwardedHeaders <- ForwardedHeaders.All) |> ignore
+        
+        services.Configure<CookiePolicyOptions>(fun (options:CookiePolicyOptions) ->  options.MinimumSameSitePolicy <- SameSiteMode.Lax) |> ignore
+
 
         let config = services.BuildServiceProvider().GetService<IConfiguration>()
 
@@ -237,6 +273,7 @@ let configureGitHubAuth (services : IServiceCollection) =
           opt.UserInformationEndpoint <- "https://api.github.com/user"
           [("login", "playerId"); ("name", "playerName")] |> Seq.iter (fun (k,v) -> opt.ClaimActions.MapJsonKey(v,k) )
           let ev = opt.Events
+         
 
           ev.OnCreatingTicket <- Func<_,_> Application.parseAndValidateOauthTicket
 
@@ -249,10 +286,18 @@ let addAuth (app:IApplicationBuilder) =
     app.UseAuthentication()
 
 
+let getPort =
+    let envPort = Environment.GetEnvironmentVariable("PORT")
+    if String.IsNullOrWhiteSpace(envPort) then
+        "8085"
+    else
+        envPort
+
+
 
 let app =
     application {
-        url "https://localhost:8085"
+        url (sprintf "http://0.0.0.0:%s" getPort)
         host_config configureHost
         app_config addAuth
         use_router routes
@@ -263,5 +308,6 @@ let app =
         use_gzip
         service_config configureGitHubAuth
     }
+Environment.GetEnvironmentVariables () |> Seq.cast<DictionaryEntry> |> Seq.iter (fun x -> Console.WriteLine x.Key)
 
 run app
