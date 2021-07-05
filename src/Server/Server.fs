@@ -309,7 +309,6 @@ let app =
         host_config configureHost
         use_router routes
         app_config Giraffe.useWebSockets
-//        add_channel "/channel" Channel.channel
         memory_cache
         use_static "public"
         use_gzip
