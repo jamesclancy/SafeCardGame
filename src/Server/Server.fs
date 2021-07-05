@@ -253,9 +253,17 @@ let configureHost (hostBuilder : IHostBuilder) =
 let configureGitHubAuth (services : IServiceCollection) =
 
 
-        services.Configure<ForwardedHeadersOptions>(fun (options:ForwardedHeadersOptions) ->  options.ForwardedHeaders <- ForwardedHeaders.All) |> ignore
-        
-        services.Configure<CookiePolicyOptions>(fun (options:CookiePolicyOptions) ->  options.MinimumSameSitePolicy <- SameSiteMode.Lax) |> ignore
+        services.Configure<ForwardedHeadersOptions>(fun (options:ForwardedHeadersOptions) ->
+                                                            options.ForwardedHeaders <- ForwardedHeaders.All
+                                                            options.KnownNetworks.Clear() |> ignore
+                                                            options.KnownProxies.Clear() |> ignore
+                                                        ) |> ignore
+
+        services.Configure<CookiePolicyOptions>(fun (options:CookiePolicyOptions) ->
+            options.MinimumSameSitePolicy <- SameSiteMode.Lax
+            options.Secure <-  CookieSecurePolicy.None
+
+        ) |> ignore
 
 
         let config = services.BuildServiceProvider().GetService<IConfiguration>()
@@ -283,7 +291,7 @@ let configureGitHubAuth (services : IServiceCollection) =
 
 
 let addAuth (app:IApplicationBuilder) =
-    app.UseAuthentication()
+    app.UseCookiePolicy().UseAuthentication()
 
 
 let getPort =
@@ -297,9 +305,8 @@ let getPort =
 
 let app =
     application {
-        url (sprintf "http://0.0.0.0:%s" getPort)
+        url (sprintf "http://+:%s" getPort)
         host_config configureHost
-        app_config addAuth
         use_router routes
         app_config Giraffe.useWebSockets
 //        add_channel "/channel" Channel.channel
@@ -307,6 +314,7 @@ let app =
         use_static "public"
         use_gzip
         service_config configureGitHubAuth
+        app_config addAuth
     }
 Environment.GetEnvironmentVariables () |> Seq.cast<DictionaryEntry> |> Seq.iter (fun x -> Console.WriteLine x.Key)
 
