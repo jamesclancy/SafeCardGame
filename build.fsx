@@ -23,6 +23,7 @@ let sharedTestsPath = Path.getFullName "./tests/Shared"
 let serverTestsPath = Path.getFullName "./tests/Server"
 
 let serverPublicPath = Path.getFullName "./src/Server/public"
+let serverPublicStaticFilesPath = Path.getFullName "./src/Server/static"
 let clientPublicPath = Path.getFullName "./src/Client/public"
 
 let npm args workingDir =
@@ -49,7 +50,11 @@ let dotnet cmd workingDir =
 
 Target.create "Clean" (fun _ ->
     Shell.cleanDir deployDir
-    Shell.cleanDir serverPublicPath)
+    Shell.cleanDir serverPublicPath
+    Shell.copyDir serverPublicPath serverPublicStaticFilesPath (fun _ -> true)
+    )
+
+
 
 Target.create "InstallClient" (fun _ -> npm "install" ".")
 

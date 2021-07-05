@@ -1,4 +1,4 @@
-﻿module UserManagementController
+module UserManagementController
 
   open DatabaseRepositories
   open Dto
@@ -11,15 +11,15 @@
 
   let indexAction (ctx : HttpContext) =
     task {
-      let cnf = Controller.getConfig ctx
-      let! result =  playerRepository.GetAll ()
+      let cnf = Config.getConfigFromContext ctx
+      let! result =  playerRepository.GetAll cnf.connectionString
       return! Controller.renderHtml ctx (UserManagementViews.index ctx (List.ofSeq (Seq.map Player.fromDomain result)))
     }
 
   let showAction (ctx: HttpContext) (id : string) =
     task {
-      let cnf = Controller.getConfig ctx
-      let! result = playerRepository.Get id
+      let cnf = Config.getConfigFromContext ctx
+      let! result = playerRepository.Get cnf.connectionString id
       match result with
       | Ok result ->
         // Controller.renderHtml ctx (NotFound.layout)
@@ -35,8 +35,8 @@
 
   let editAction (ctx: HttpContext) (id : string) =
     task {
-      let cnf = Controller.getConfig ctx
-      let! result =  playerRepository.Get id
+      let cnf = Config.getConfigFromContext ctx
+      let! result =  playerRepository.Get cnf.connectionString id
       match result with
       | Ok result ->
         return! Controller.renderHtml ctx (UserManagementViews.edit ctx (Player.fromDomain result) Map.empty)

@@ -48,9 +48,9 @@ module GameSetup =
             | _ ->
                 (sprintf "Unable to create card instance for %s" (card.ToString())) |> Error
 
-    let testDeckSeqGenerator (getDecks : unit -> Async<DeckDto seq>) (getCardsForDeck : string ->  Async<Card seq>) (numberOfCards :int) =
+    let testDeckSeqGenerator (getDecks : Async<DeckDto seq>) (getCardsForDeck : string ->  Async<Card seq>) (numberOfCards :int) =
             async {
-              let! values = getDecks ()
+              let! values = getDecks
               let! cards = values |> CollectionManipulation.shuffleG |> Seq.head |> (fun x -> x.DeckId) |> getCardsForDeck
 
               return cards
