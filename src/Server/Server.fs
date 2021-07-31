@@ -59,10 +59,9 @@ let constructGameFromModelAndDatabaseInfo connectionString (model: GetOrCreateGa
         let! player = playerRes
         let! game = gameRes
 
-
-            // Game already exists first check if the player is a part of that game,
-            // if so return the game. If they are not already in the game can they join?
-            // if so add them
+        // Game already exists first check if the player is a part of that game,
+        // if so return the game. If they are not already in the game can they join?
+        // if so add them
         match player, game with
         | Some p, Some g
             when (g.Player1Id = p.PlayerId.ToString() || g.Player2Id = p.PlayerId.ToString()) ->
@@ -82,8 +81,6 @@ let constructGameFromModelAndDatabaseInfo connectionString (model: GetOrCreateGa
                     return! (Exception "game dto not loaded" |> Error)
             | Error e -> return! (e |> Error)
         | _, _ -> return!  (Exception "Unable to create game" |> Error)
-
-
     }
 
 let gameStateFromDtoOrEmpty (gameDto) =
@@ -162,8 +159,6 @@ let gameApi ctx  : ICardGameApi =
                 }
         }
 
-
-
 let buildRemotingApi api next ctx = task {
     let handler =
         Remoting.createApi()
@@ -178,7 +173,6 @@ let noAuthenticationRequired nxt ctx = task { return! nxt ctx }
 
 let authChallenge : HttpFunc -> HttpContext -> HttpFuncResult =
     requiresAuthentication (Auth.challenge "GitHub")
-
 
 let signOut (next : HttpFunc) (ctx : HttpContext) =
   task {
@@ -197,7 +191,6 @@ let setUpWebSockets (next : HttpFunc) (ctx : HttpContext)  =
          return! Successful.ok (text "Pinged the clients") next ctx
     }
 
-
 let routes =
     choose [
         route "/" >=> (authChallenge >=>  htmlFile "public/app.html")
@@ -211,7 +204,6 @@ let routes =
         //subRoute "/channel" setUpWebSockets
         //bridgeServer
     ]
-
 
 type UserSecretsTarget = UserSecretsTarget of unit
 let configureHost (hostBuilder : IHostBuilder) =
@@ -251,8 +243,6 @@ let configureHost (hostBuilder : IHostBuilder) =
 
 
 let configureGitHubAuth (services : IServiceCollection) =
-
-
         services.Configure<ForwardedHeadersOptions>(fun (options:ForwardedHeadersOptions) ->
                                                             options.ForwardedHeaders <- ForwardedHeaders.All
                                                             options.KnownNetworks.Clear() |> ignore
@@ -265,26 +255,22 @@ let configureGitHubAuth (services : IServiceCollection) =
 
         ) |> ignore
 
-
         let config = services.BuildServiceProvider().GetService<IConfiguration>()
 
         let c = services.AddAuthentication(fun cfg ->
-          cfg.DefaultScheme <- CookieAuthenticationDefaults.AuthenticationScheme
-          cfg.DefaultSignInScheme <- CookieAuthenticationDefaults.AuthenticationScheme
-          cfg.DefaultChallengeScheme <- "GitHub").AddCookie()
+              cfg.DefaultScheme <- CookieAuthenticationDefaults.AuthenticationScheme
+              cfg.DefaultSignInScheme <- CookieAuthenticationDefaults.AuthenticationScheme
+              cfg.DefaultChallengeScheme <- "GitHub").AddCookie()
         c.AddOAuth("GitHub", fun (opt : Authentication.OAuth.OAuthOptions) ->
-          opt.ClientId <- config.GetValue<string>("GitHubOAuthClientId")
-          opt.ClientSecret <- config.GetValue<string>("GitHubOAuthKey")
-          opt.CallbackPath <- PathString "/signin-github"
-          opt.AuthorizationEndpoint <-  "https://github.com/login/oauth/authorize"
-          opt.TokenEndpoint <- "https://github.com/login/oauth/access_token"
-          opt.UserInformationEndpoint <- "https://api.github.com/user"
-          [("login", "playerId"); ("name", "playerName")] |> Seq.iter (fun (k,v) -> opt.ClaimActions.MapJsonKey(v,k) )
-          let ev = opt.Events
-         
-
-          ev.OnCreatingTicket <- Func<_,_> Application.parseAndValidateOauthTicket
-
+              opt.ClientId <- config.GetValue<string>("GitHubOAuthClientId")
+              opt.ClientSecret <- config.GetValue<string>("GitHubOAuthKey")
+              opt.CallbackPath <- PathString "/signin-github"
+              opt.AuthorizationEndpoint <-  "https://github.com/login/oauth/authorize"
+              opt.TokenEndpoint <- "https://github.com/login/oauth/access_token"
+              opt.UserInformationEndpoint <- "https://api.github.com/user"
+              [("login", "playerId"); ("name", "playerName")] |> Seq.iter (fun (k,v) -> opt.ClaimActions.MapJsonKey(v,k) )
+              let ev = opt.Events
+              ev.OnCreatingTicket <- Func<_,_> Application.parseAndValidateOauthTicket
          ) |> ignore
 
         services
@@ -301,8 +287,6 @@ let getPort =
     else
         envPort
 
-
-
 let app =
     application {
         url (sprintf "http://+:%s" getPort)
@@ -315,6 +299,5 @@ let app =
         service_config configureGitHubAuth
         app_config addAuth
     }
-Environment.GetEnvironmentVariables () |> Seq.cast<DictionaryEntry> |> Seq.iter (fun x -> Console.WriteLine x.Key)
 
 run app

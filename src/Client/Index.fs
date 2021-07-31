@@ -56,8 +56,10 @@ let update (cmsg: ClientInternalMsg) (model: Model): Model * Cmd<ClientInternalM
         | FailedLogin e ->
             { model with LoginPageFormModel =  {model.LoginPageFormModel with ErrorMessage = e }}, Cmd.none
         |SuccessfulLogin  (gs, cmd, gi, pi) ->
+            Console.WriteLine cmd
             match cmd, gs with
             | CommandToServer m, Some g ->
+                Console.WriteLine m
                 let cmdBatch = Cmd.batch [ Cmd.bridgeSend ( (pi, gi) |> Connect)
                                            Cmd.bridgeSend ((m, g) |> ServerCommand)
                                          ]
@@ -66,17 +68,24 @@ let update (cmsg: ClientInternalMsg) (model: Model): Model * Cmd<ClientInternalM
         | AttemptConnectToExistingGame gi ->
             { model with LoginPageFormModel = { model.LoginPageFormModel with  GameId = (gi.ToString())} }, Cmd.none
         | AttemptConnect  ->
-                let cmd = Cmd.OfAsync.perform cardGameServer.getOrCreateGame
+                Console.WriteLine "get game api call started...."
+                let cmd = Cmd.OfAsync.either cardGameServer.getOrCreateGame
                             { PlayerId = model.LoginPageFormModel.PlayerId
                               GameId = model.LoginPageFormModel.GameId}
                             (fun gameStateResult ->
                                 Console.WriteLine "get game api call completed...."
+                                Console.WriteLine gameStateResult
                                 match gameStateResult with
                                 | Error e ->
                                     e |> FailedLogin |> LoginPageFormMsg
                                 | Ok (gs, cmd, gi, pi) ->
                                     Console.WriteLine "received game from server...."
                                     (gs, cmd, gi, pi)  |> SuccessfulLogin |> LoginPageFormMsg
+                            )
+                            (fun exn ->
+                                Console.WriteLine "get game api call failed...."
+                                Console.WriteLine exn
+                                exn.ToString () |> FailedLogin |> LoginPageFormMsg
                             )
                 model, cmd
         | _ ->

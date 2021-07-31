@@ -12,3 +12,4 @@ Fable.Browser.WebSocket
 Elmish.Bridge.Client
 Fulma.Extensions.Wikiki.Tooltip
 Fulma.Extensions.Wikiki.PageLoader
+FParsec

@@ -1,10 +1,16 @@
-﻿module GameStateTransitions
+module GameStateTransitions
 
 open Elmish
 open Events
 open Shared.Domain
 open Operators
 open Shared
+
+open SpecialEffectParser
+
+
+let runGameStateTransformation (str: string) : GameState -> GameState =
+       getFuncForSpecialEffectText str
 
 let takeDeckDealFirstHandAndReturnNewPlayerBoard (initialHandSize: int) (playerId : PlayerId) (deck : Deck) =
     let emptyHand =
@@ -43,7 +49,7 @@ let initializeGameStateFromStartGameEvent (ev : StartGameEvent) =
 
 let modifyGameStateFromDrawCardEvent (ev: DrawCardEvent) (gs: GameState) =
     (getExistingPlayerBoardFromGameState ev.PlayerId gs)
-    >>= (moveCardsFromDeckToHand gs ev.PlayerId)
+    >>= (moveCardFromDeckToHand gs ev.PlayerId)
     >>= (migrateGameStateToNewStep (ev.PlayerId |> Play))
     |> function
         | Ok g -> g
@@ -99,7 +105,7 @@ let modifyGameStateFromDiscardCardEvent (ev: DiscardCardEvent) (gs: GameState) =
 
 let applyEffectIfDefined effect gs =
     match effect with
-    | Some e -> e.Function gs |> Ok
+    | Some e -> (runGameStateTransformation e.Function) gs |> Ok
     | None  -> gs |> Ok
 
 let appendCreatureToPlayerBoard inPlayCreature playerBoard =
