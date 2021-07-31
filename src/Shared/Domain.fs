@@ -133,7 +133,7 @@ module Domain =
             ResourceAvailableOnFirstTurn: bool;
             ResourcesAdded: ResourcePool
         }
-    and GameStateTransformation = GameState -> GameState
+    and GameStateTransformation = string //GameState -> GameState
     and GameStateSpecialEffect =
         {
             Function: GameStateTransformation
@@ -396,7 +396,10 @@ module Domain =
         else
             let cardsToTake = List.truncate cardsToDraw deck.Cards
             { deck with Cards = List.skip cardsToTake.Length deck.Cards}, {hand with Cards = hand.Cards @ cardsToTake}
-
-    let moveCardsFromDeckToHand gs playerId pb =
-        let newDeck, newHand =  drawCardsFromDeck 1 pb.Deck pb.Hand
+            
+    let moveCardsFromDeckToHand numberOfCards gs playerId pb =
+        let newDeck, newHand =  drawCardsFromDeck numberOfCards pb.Deck pb.Hand
         Ok { gs with Boards = (gs.Boards.Add (playerId, { pb with Deck = newDeck; Hand = newHand })  ) }
+
+    let moveCardFromDeckToHand gs playerId pb =
+        moveCardsFromDeckToHand 1 gs playerId pb

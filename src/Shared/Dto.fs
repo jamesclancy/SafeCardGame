@@ -222,23 +222,28 @@ module GameStateSpecialEffect =
         |Some s ->
             Some ({
                     Description = s.Description
-                    Function = "Not Impl yet"
+                    Function = s.Function
                     } : SpecialEffectDto)
 
     let fromDto (specialEffectDto : SpecialEffectDto) : Result<GameStateSpecialEffect, string> =
+       let parsedFunc = SpecialEffectParser.getFuncForSpecialEffectText specialEffectDto.Function
        Ok {
            Description = specialEffectDto.Description
-           Function = id
+           Function = specialEffectDto.Function
        }
 
 
     let fromOptionalDto (specialEffectDto : Option<SpecialEffectDto>) : Result<Option<GameStateSpecialEffect>, string> =
        match specialEffectDto with
-       |None -> None |> Ok
+       | None -> {
+                       Description = "n/a"
+                       Function = ""
+                   } |> Some |> Ok
        | Some d ->
+                   let parsedFunc = SpecialEffectParser.getFuncForSpecialEffectText d.Function
                    {
                        Description = d.Description
-                       Function = id
+                       Function = d.Function
                    } |> Some |> Ok
 
 module Attack =

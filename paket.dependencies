@@ -3,6 +3,8 @@ framework: net5.0
 storage: none
 
 nuget Fable.Remoting.Giraffe
+nuget FParsec
+nuget FsToolkit.ErrorHandling
 nuget Fulma.Extensions.Wikiki.PageLoader
 nuget Fulma.Extensions.Wikiki.Tooltip
 nuget Saturn

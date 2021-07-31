@@ -9,3 +9,5 @@ Dapper
 Thoth.Json.Net
 Thoth.Json.Giraffe
 Elmish.Bridge.Giraffe
+FParsec
+FsToolkit.ErrorHandling

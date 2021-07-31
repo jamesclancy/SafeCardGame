@@ -6,12 +6,14 @@
   <ItemGroup>
     <Compile Include="Operators.fs" />
     <Compile Include="CollectionManipulation.fs" />
+      <Compile Include="Parser.fs" />
     <Compile Include="Domain.fs" />
-    <Compile Include="Events.fs" />
+      <Compile Include="Events.fs" />
+      <Compile Include="SpecialEffectParser.fs" />
+    <Compile Include="GameStateTransitions.fs" />
     <Compile Include="Dto.fs" />
     <Compile Include="Shared.fs" />
     <Compile Include="SampleCardDatabase.fs" />
-    <Compile Include="GameStateTransitions.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Elmish" Version="3.1.0" />

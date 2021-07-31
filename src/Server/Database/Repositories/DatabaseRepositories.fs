@@ -235,4 +235,5 @@ type DeckRepository () =
                     |> Seq.toList
                     |> CollectionManipulation.selectAllOkayResults
                     |> List.toSeq
-            }
+            }    
+
